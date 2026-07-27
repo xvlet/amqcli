@@ -1,0 +1,15 @@
+# ==============================================================================
+# amqcli Configuration
+# ==============================================================================
+refresh_interval: 1s
+view_stats: false
+encoding: utf-8
+environments:
+  dev:
+    host: "${MQ_HOST:-127.0.0.1}"
+    username: "${MQ_USER:-admin}"
+    password: "${MQ_PASS:-admin}"
+  prod:
+    host: "10.0.0.5"
+    username: "admin"
+    password: "prod-password"

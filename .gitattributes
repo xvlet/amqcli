@@ -1,0 +1,50 @@
+# .gitattributes
+# Always use LF (Unix) line endings when checking out from Git repository
+# Force apply regardless of core.autocrlf settings
+
+# Default: Force LF for all text files
+* text=auto eol=lf
+
+# Source code
+*.go        text eol=lf
+*.java      text eol=lf
+*.c         text eol=lf
+*.h         text eol=lf
+*.cpp       text eol=lf
+*.py        text eol=lf
+
+# Build/Config files
+Makefile    text eol=lf
+Dockerfile  text eol=lf
+*.sh        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+*.toml      text eol=lf
+*.conf      text eol=lf
+*.env       text eol=lf
+*.mk        text eol=lf
+*.mod       text eol=lf
+*.sum       text eol=lf
+*.spec      text eol=lf
+go.work     text eol=lf
+
+# JSON / XML / Properties
+*.json      text eol=lf
+*.xml       text eol=lf
+*.properties text eol=lf
+
+# Documentation
+*.md        text eol=lf
+*.txt       text eol=lf
+
+# Binary files (exclude from conversion)
+*.tar.gz    binary
+*.gz        binary
+*.zip       binary
+*.jar       binary
+*.class     binary
+*.png       binary
+*.jpg       binary
+*.gif       binary
+*.ico       binary
+*.pdf       binary
