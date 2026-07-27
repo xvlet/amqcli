@@ -45,7 +45,7 @@ flowchart LR
 ## 주요 기능
 
 <table>
-<tr><td><b>TUI 기반 환경</b></td><td>Bubbletea로 구동되는 최신 크로스 플랫폼 터미널 인터페이스를 통해 부드러운 네비게이션과 다양한 컬러 테마를 제공합니다.</td></tr>
+<tr><td><b>TUI 기반 환경</b></td><td>Bubbletea로 구동되는 최신 크로스 플랫폼 터미널 인터페이스를 통해 부드러운 네비게이션과 Catppuccin 컬러 테마를 제공합니다. (구형 VT100 자동 Fallback 지원)</td></tr>
 <tr><td><b>큐(Queue) 관리</b></td><td>모든 큐의 목록과 소비자(Consumer) 수, Enqueue/Dequeue 메트릭을 실시간으로 확인하고 큐 생성, 퍼지(Purge), 삭제 작업을 지원합니다.</td></tr>
 <tr><td><b>메시지 조회</b></td><td>UI 환경 내에서 큐 내부의 메시지를 직접 조회하고, 메시지 속성과 페이로드(Payload), Correlation ID 등을 상세히 확인할 수 있습니다.</td></tr>
 <tr><td><b>메시지 전송</b></td><td>AMQP 1.0 또는 STOMP 프로토콜을 통해 타겟 큐로 메시지를 즉시 전송할 수 있습니다.</td></tr>
@@ -149,6 +149,12 @@ Go가 설치되어 있지 않고 실행 파일만 바로 사용하고 싶다면,
 tar -xzf amqcli_linux_amd64.tar.gz
 chmod +x amqcli
 ./amqcli -h
+```
+
+### 5. Docker (GHCR)
+GitHub Container Registry(GHCR)를 통해 배포되는 공식 Docker 이미지를 이용해 바로 실행할 수 있습니다:
+```bash
+docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:latest
 ```
 
 ---

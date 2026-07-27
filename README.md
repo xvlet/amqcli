@@ -45,7 +45,7 @@ flowchart LR
 ## Key Features
 
 <table>
-<tr><td><b>TUI Experience</b></td><td>Modern, cross-platform terminal interface powered by Bubbletea, providing fluid navigation and color-rich themes.</td></tr>
+<tr><td><b>TUI Experience</b></td><td>Modern, cross-platform terminal interface powered by Bubbletea, providing fluid navigation and color-rich Catppuccin themes with VT100 fallback.</td></tr>
 <tr><td><b>Queue Management</b></td><td>List all queues, view consumer counts, enqueued/dequeued metrics. Support for creating, purging, and deleting queues.</td></tr>
 <tr><td><b>Message Browsing</b></td><td>Browse messages inside queues directly from the UI, view detailed properties, payloads, and correlation IDs.</td></tr>
 <tr><td><b>Message Sending</b></td><td>Quickly send messages to a target queue directly via AMQP 1.0 or STOMP protocols.</td></tr>
@@ -149,6 +149,12 @@ After downloading, extract the archive and run it:
 tar -xzf amqcli_linux_amd64.tar.gz
 chmod +x amqcli
 ./amqcli -h
+```
+
+### 5. Docker (GHCR)
+You can run `amqcli` directly via Docker using our official image hosted on GitHub Container Registry (GHCR):
+```bash
+docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:latest
 ```
 
 ---

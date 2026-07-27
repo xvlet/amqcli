@@ -1,0 +1,19 @@
+name: Cleanup Release
+
+on:
+  delete
+
+jobs:
+  delete-release:
+    # Only run when a tag is deleted
+    if: github.event.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to delete releases
+    steps:
+      - name: Delete corresponding GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Attempting to delete release for tag: ${{ github.event.ref }}"
+          gh release delete "${{ github.event.ref }}" --yes --repo "${{ github.repository }}"
