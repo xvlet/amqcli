@@ -32,35 +32,35 @@ type Message struct {
 
 // QueueDetail represents extended statistics and consumers of a Queue
 type QueueDetail struct {
-	Name                 string
-	QueueSize            int64
-	ConsumerCount        int64
-	EnqueueCount         int64
-	DequeueCount         int64
-	InFlightCount        int64
-	ExpiredCount         int64
-	DispatchCount        int64
-	ProducerCount        int64
-	MemoryUsageBytes     int64
-	MemoryPercentUsage   int
-	StoreMessageSize     int64
-	AverageBlockedTime   float64
-	Consumers            []Consumer
+	Name               string
+	QueueSize          int64
+	ConsumerCount      int64
+	EnqueueCount       int64
+	DequeueCount       int64
+	InFlightCount      int64
+	ExpiredCount       int64
+	DispatchCount      int64
+	ProducerCount      int64
+	MemoryUsageBytes   int64
+	MemoryPercentUsage int
+	StoreMessageSize   int64
+	AverageBlockedTime float64
+	Consumers          []Consumer
 }
 
 // Consumer represents a client connected to a Queue
 type Consumer struct {
-	ConsumerID     string
-	ClientID       string
-	ConnectionID   string
-	RemoteAddress  string
-	PID            string // Extracted from ClientID or ConnectionID
-	Uptime         string // Calculated from timestamp in ClientID
-	Enqueues       int64
-	Dequeues       int64
-	PrefetchSize   int
-	Exclusive      bool
-	Retroactive    bool
+	ConsumerID    string
+	ClientID      string
+	ConnectionID  string
+	RemoteAddress string
+	PID           string // Extracted from ClientID or ConnectionID
+	Uptime        string // Calculated from timestamp in ClientID
+	Enqueues      int64
+	Dequeues      int64
+	PrefetchSize  int
+	Exclusive     bool
+	Retroactive   bool
 }
 
 // Connection represents a client connection to the broker

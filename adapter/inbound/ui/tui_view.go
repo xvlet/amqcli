@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"amqcli/config"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -61,7 +62,9 @@ func (m *AppModel) View() string {
 	g := lipgloss.NewStyle().Foreground(lipgloss.Color("#a5adcb")).Render
 
 	timeStr := m.lastUpdated.Format("2006-01-02 15:04:05")
-	rightText := g(fmt.Sprintf("Last Updated: %s", timeStr))
+	versionText := lipgloss.NewStyle().Foreground(lipgloss.Color("#b7bdf8")).Render(fmt.Sprintf("amqcli (%s)", config.Version))
+	lastUpdatedText := g(fmt.Sprintf("Last Updated: %s", timeStr))
+	rightText := fmt.Sprintf("%s%s%s", versionText, dimPipe, lastUpdatedText)
 	leftText := fmt.Sprintf("%s%s", y("q"), g(" : Quit"))
 
 	footerW := contentW + 2 // Box inner content (contentW) + 2 horizontal borders

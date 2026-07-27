@@ -184,10 +184,10 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host strin
 
 	if isHighColor {
 		// Original 256-color theme
-		s.Selected = s.Selected.Foreground(lipgloss.Color("#181926")).Background(lipgloss.Color("#8aadf4")).Bold(true)
+		s.Selected = s.Selected.Foreground(lipgloss.Color("#181926")).Background(lipgloss.Color("#8aadf4")).Bold(false)
 	} else {
 		// Limited terminal: Use high-contrast Black on White theme (as requested)
-		s.Selected = s.Selected.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("15")).Bold(true)
+		s.Selected = s.Selected.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("15")).Bold(false)
 	}
 
 	qTable.SetStyles(s)

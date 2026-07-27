@@ -5,9 +5,11 @@ import (
 	"os"
 	"time"
 
-	"strings"
 	"gopkg.in/yaml.v3"
+	"strings"
 )
+
+var Version = "v0.0.1" // Will be overridden by ldflags during build
 
 type Config struct {
 	RefreshInterval time.Duration             `yaml:"refresh_interval"`
@@ -50,7 +52,7 @@ func LoadConfig(path string) (*Config, error) {
 	if cfg.Environments == nil {
 		cfg.Environments = make(map[string]ActiveMQConfig)
 	}
-	
+
 	for key, mq := range cfg.Environments {
 		if mq.Host != "" {
 			if mq.Protocol == "" {

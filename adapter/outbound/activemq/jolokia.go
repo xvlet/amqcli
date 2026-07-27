@@ -531,6 +531,7 @@ func (j *JolokiaClient) GetQueueDetail(name string) (*domain.QueueDetail, error)
 			if j.username != "" && j.password != "" {
 				req.SetBasicAuth(j.username, j.password)
 			}
+			// #nosec G704 -- The URL is intentionally provided by the user via CLI config to connect to their own broker.
 			resp, err := j.client.Do(req)
 			if err == nil {
 				defer func() { _ = resp.Body.Close() }()
