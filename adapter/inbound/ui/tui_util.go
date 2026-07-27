@@ -181,6 +181,7 @@ func formatWithCommas(n int64) string {
 	return b.String()
 }
 
+
 func makeUsageBar(percent float64, bytes int64, isASCII bool) string {
 	if percent <= 0 && bytes == 0 {
 		return "  -"

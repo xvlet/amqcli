@@ -85,16 +85,16 @@ func (m *AppModel) updateTimeDeletePopup(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *AppModel) viewTimeDeletePopup() string {
 	border := lipgloss.NewStyle().
-		Border(asciiBorder).
-		BorderForeground(lipgloss.Color("62")).
+		Border(appBorder).
+		BorderForeground(lipgloss.Color("#8aadf4")).
 		Padding(1, 2)
 
-	title := lipgloss.NewStyle().Foreground(lipgloss.Color("205")).Bold(true).Render("Delete By Time")
-	desc := lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render("Delete messages older than:")
+	title := lipgloss.NewStyle().Foreground(lipgloss.Color("#c6a0f6")).Bold(true).Render("Delete By Time")
+	desc := lipgloss.NewStyle().Foreground(lipgloss.Color("#cad3f5")).Render("Delete messages older than:")
 
-	valColor := lipgloss.Color("229")
+	valColor := lipgloss.Color("#181926")
 	if m.timeDeleteFocus != 0 {
-		valColor = lipgloss.Color("245")
+		valColor = lipgloss.Color("#8087a2")
 	}
 	valStr := lipgloss.NewStyle().Foreground(valColor).Render(m.timeDeleteVal)
 	if m.timeDeleteVal == "" {
@@ -102,11 +102,11 @@ func (m *AppModel) viewTimeDeletePopup() string {
 	}
 
 	unitStr := "days"
-	mStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	hStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	dStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+	mStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#8087a2"))
+	hStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#8087a2"))
+	dStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#8087a2"))
 
-	activeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("229")).Bold(true)
+	activeStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#181926")).Bold(true)
 
 	switch m.timeDeleteUnit {
 	case "m":
@@ -125,11 +125,11 @@ func (m *AppModel) viewTimeDeletePopup() string {
 		dStyle.Render("(d)ays"),
 	)
 
-	bracketLeft := lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render("[ ")
-	bracketRight := lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Render(" ]")
+	bracketLeft := lipgloss.NewStyle().Foreground(lipgloss.Color("#8087a2")).Render("[ ")
+	bracketRight := lipgloss.NewStyle().Foreground(lipgloss.Color("#8087a2")).Render(" ]")
 	if m.timeDeleteFocus == 0 {
-		bracketLeft = lipgloss.NewStyle().Foreground(lipgloss.Color("229")).Render("[ ")
-		bracketRight = lipgloss.NewStyle().Foreground(lipgloss.Color("229")).Render(" ]")
+		bracketLeft = lipgloss.NewStyle().Foreground(lipgloss.Color("#181926")).Render("[ ")
+		bracketRight = lipgloss.NewStyle().Foreground(lipgloss.Color("#181926")).Render(" ]")
 	}
 
 	inputLine := fmt.Sprintf("%s%s%s %s", bracketLeft, valStr, bracketRight, units)
@@ -139,8 +139,8 @@ func (m *AppModel) viewTimeDeletePopup() string {
 		selectionInfo = lipgloss.NewStyle().Foreground(lipgloss.Color("208")).Render("Current selection: (invalid)")
 	}
 
-	btnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Padding(0, 1)
-	focusedBtnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("229")).Background(lipgloss.Color("57")).Bold(true).Padding(0, 1)
+	btnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#a5adcb")).Padding(0, 1)
+	focusedBtnStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#181926")).Background(lipgloss.Color("#8aadf4")).Bold(true).Padding(0, 1)
 
 	delStyle := btnStyle
 	canStyle := btnStyle

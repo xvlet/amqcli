@@ -70,38 +70,7 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = nil
 		m.lastUpdated = time.Now()
 		m.queues = msg
-		rows := make([]table.Row, len(msg))
-
-		// Determine if we should use pure ASCII for vt100 or restricted terminals
-		termEnv := strings.ToLower(os.Getenv("TERM"))
-		langEnv := strings.ToLower(os.Getenv("LANG"))
-
-		isASCII := (lipgloss.ColorProfile() == termenv.Ascii) ||
-			strings.Contains(termEnv, "vt") ||
-			strings.Contains(termEnv, "aix") ||
-			(langEnv != "" && !strings.Contains(langEnv, "utf-8") && !strings.Contains(langEnv, "utf8"))
-
-		for i, q := range msg {
-			row := table.Row{
-				q.Name,
-				fmt.Sprintf("%12d", q.Pending),
-				fmt.Sprintf("%12d", q.Consumers),
-				fmt.Sprintf("%12d", q.Enqueued),
-				fmt.Sprintf("%12d", q.Dequeued),
-			}
-			if m.viewStats {
-				diskStr := "  -"
-				if q.StoreMessageSize > 0 {
-					diskStr = fmt.Sprintf("[ %s ]", formatBytes(q.StoreMessageSize))
-				}
-				actualMemPercent := float64(q.MemoryPercentUsage)
-				if q.MemoryLimit > 0 {
-					actualMemPercent = float64(q.MemoryUsageBytes) / float64(q.MemoryLimit) * 100.0
-				}
-				row = append(row, makeUsageBar(actualMemPercent, q.MemoryUsageBytes, isASCII), diskStr)
-			}
-			rows[i] = row
-		}
+		rows := m.buildQueueRows(msg)
 		m.queueTable.SetRows(rows)
 		return m, nil
 	case *domain.QueueDetail:
@@ -399,6 +368,14 @@ func (m *AppModel) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.consumersTable.SetCursor(0) // reset cursor to first row
 				return m, m.fetchQueueDetail(m.selectedQueue)
 			}
+		case "u", "U":
+			m.viewStats = !m.viewStats
+			m.updateQueueTableColumns()
+			m.queueTable.SetRows(m.buildQueueRows(m.queues)) // update rows immediately to prevent column length panic
+			if m.viewStats {
+				return m, tea.Batch(m.fetchBrokerStats(), m.fetchQueues())
+			}
+			return m, m.fetchQueues()
 		case "n", "N":
 			m.currentState = stateConnections
 			m.connections = nil
@@ -693,4 +670,60 @@ func (m *AppModel) updateConnections(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.connectionsTable, cmd = m.connectionsTable.Update(msg)
 	return m, cmd
+}
+
+func (m *AppModel) updateQueueTableColumns() {
+	// Name width is preserved from existing configuration to avoid shrinking unexpectedly
+	qNameW := 26
+	if len(m.queueTable.Columns()) > 0 {
+		qNameW = m.queueTable.Columns()[0].Width
+	}
+	qCols := []table.Column{
+		{Title: "Name", Width: qNameW},
+		{Title: fmt.Sprintf("%12s", "Pending"), Width: 12},
+		{Title: fmt.Sprintf("%12s", "Consumers"), Width: 12},
+		{Title: fmt.Sprintf("%12s", "Enqueued"), Width: 12},
+		{Title: fmt.Sprintf("%12s", "Dequeued"), Width: 12},
+	}
+	if m.viewStats {
+		qCols = append(qCols,
+			table.Column{Title: "Memory", Width: 30},
+			table.Column{Title: "Disk", Width: 15},
+		)
+	}
+	m.queueTable.SetRows([]table.Row{}) // Temporarily clear rows to prevent panic during SetColumns
+	m.queueTable.SetColumns(qCols)
+}
+
+func (m *AppModel) buildQueueRows(queues []domain.Queue) []table.Row {
+	rows := make([]table.Row, len(queues))
+	termEnv := strings.ToLower(os.Getenv("TERM"))
+	langEnv := strings.ToLower(os.Getenv("LANG"))
+	isASCII := (lipgloss.ColorProfile() == termenv.Ascii) ||
+		strings.Contains(termEnv, "vt") ||
+		strings.Contains(termEnv, "aix") ||
+		(langEnv != "" && !strings.Contains(langEnv, "utf-8") && !strings.Contains(langEnv, "utf8"))
+
+	for i, q := range queues {
+		row := table.Row{
+			q.Name,
+			fmt.Sprintf("%12d", q.Pending),
+			fmt.Sprintf("%12d", q.Consumers),
+			fmt.Sprintf("%12d", q.Enqueued),
+			fmt.Sprintf("%12d", q.Dequeued),
+		}
+		if m.viewStats {
+			diskStr := "  -"
+			if q.StoreMessageSize > 0 {
+				diskStr = fmt.Sprintf("[ %s ]", formatBytes(q.StoreMessageSize))
+			}
+			actualMemPercent := float64(q.MemoryPercentUsage)
+			if q.MemoryLimit > 0 {
+				actualMemPercent = float64(q.MemoryUsageBytes) / float64(q.MemoryLimit) * 100.0
+			}
+			row = append(row, makeUsageBar(actualMemPercent, q.MemoryUsageBytes, isASCII), diskStr)
+		}
+		rows[i] = row
+	}
+	return rows
 }

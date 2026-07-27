@@ -10,15 +10,15 @@ import (
 )
 
 var (
-	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("229"))
-	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#181926"))
+	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#8087a2"))
 	cursorStyle  = focusedStyle
-	noStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
+	noStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("#8087a2"))
 
-	btnStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Padding(0, 1)
-	focusedBtnStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("229")).Background(lipgloss.Color("57")).Bold(true).Padding(0, 1)
+	btnStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("#a5adcb")).Padding(0, 1)
+	focusedBtnStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#181926")).Background(lipgloss.Color("#8aadf4")).Bold(true).Padding(0, 1)
 
-	popupBorder = lipgloss.Color("62")
+	popupBorder = lipgloss.Color("#8aadf4")
 
 	SubmitOptOk     = "OK"
 	SubmitOptCancel = "Cancel"
@@ -154,7 +154,7 @@ func (m FormModel) View() string {
 	buttons := lipgloss.JoinHorizontal(lipgloss.Top, okStyle.Render("[  OK  ]"), "   ", cancelStyle.Render("[ Cancel ]"))
 	fmt.Fprintf(&b, "%s\n", buttons)
 
-	return lipgloss.NewStyle().Border(asciiBorder).BorderForeground(lipgloss.Color("62")).Padding(1, 2).Render(b.String())
+	return lipgloss.NewStyle().Border(appBorder).BorderForeground(lipgloss.Color("#8aadf4")).Padding(1, 2).Render(b.String())
 }
 
 func (m FormModel) GetValues() []string {

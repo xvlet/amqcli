@@ -11,16 +11,18 @@ import (
 
 type Config struct {
 	RefreshInterval time.Duration             `yaml:"refresh_interval"`
-	ViewStats       bool                      `yaml:"view_stats"`
 	Encoding        string                    `yaml:"encoding"`
 	Environments    map[string]ActiveMQConfig `yaml:"environments"`
 }
 
 type ActiveMQConfig struct {
+	Protocol   string `yaml:"protocol"`    // "stomp" or "amqp"
 	Host       string `yaml:"host"`        // e.g. "1.234.25.133"
 	StompPort  string `yaml:"stomp_port"`  // default "61613"
+	AmqpPort   string `yaml:"amqp_port"`   // default "5672"
 	WebPort    string `yaml:"web_port"`    // default "8161"
 	StompURL   string `yaml:"stomp_url"`   // optional full override
+	AmqpURL    string `yaml:"amqp_url"`    // optional full override
 	JolokiaURL string `yaml:"jolokia_url"` // optional full override
 	Username   string `yaml:"username"`
 	Password   string `yaml:"password"` // #nosec G117 -- plain config field, not a leaked secret
@@ -37,7 +39,6 @@ func LoadConfig(path string) (*Config, error) {
 
 	cfg := &Config{
 		RefreshInterval: 3 * time.Second, // Default value
-		ViewStats:       true,            // Default to true
 		Encoding:        "utf-8",         // Default to utf-8
 	}
 
@@ -52,9 +53,16 @@ func LoadConfig(path string) (*Config, error) {
 	
 	for key, mq := range cfg.Environments {
 		if mq.Host != "" {
+			if mq.Protocol == "" {
+				mq.Protocol = "stomp"
+			}
 			stompPort := mq.StompPort
 			if stompPort == "" {
 				stompPort = "61613"
+			}
+			amqpPort := mq.AmqpPort
+			if amqpPort == "" {
+				amqpPort = "5672"
 			}
 			webPort := mq.WebPort
 			if webPort == "" {
@@ -62,6 +70,9 @@ func LoadConfig(path string) (*Config, error) {
 			}
 			if mq.StompURL == "" {
 				mq.StompURL = fmt.Sprintf("%s:%s", mq.Host, stompPort)
+			}
+			if mq.AmqpURL == "" {
+				mq.AmqpURL = fmt.Sprintf("amqp://%s:%s", mq.Host, amqpPort)
 			}
 			if mq.JolokiaURL == "" {
 				mq.JolokiaURL = fmt.Sprintf("http://%s:%s/api/jolokia", mq.Host, webPort)

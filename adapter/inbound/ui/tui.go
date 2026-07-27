@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"amqcli/domain"
@@ -19,17 +20,32 @@ var (
 	// titleStyle will be set dynamically in NewAppModel to handle profile-specific colors
 	titleStyle        lipgloss.Style
 	popupOverlayStyle = lipgloss.NewStyle().Padding(2, 4)
-	asciiBorder       = lipgloss.Border{
-		Top:         "-",
-		Bottom:      "-",
-		Left:        "|",
-		Right:       "|",
-		TopLeft:     "+",
-		TopRight:    "+",
-		BottomLeft:  "+",
-		BottomRight: "+",
-	}
+	appBorder         lipgloss.Border
 )
+
+func init() {
+	lang := strings.ToUpper(os.Getenv("LANG"))
+	lcAll := strings.ToUpper(os.Getenv("LC_ALL"))
+	term := strings.ToUpper(os.Getenv("TERM"))
+
+	// Determine if the terminal supports UTF-8
+	supportsUTF8 := strings.Contains(lang, "UTF-8") || strings.Contains(lcAll, "UTF-8") || strings.Contains(term, "XTERM") || strings.Contains(term, "256COLOR")
+
+	if supportsUTF8 {
+		appBorder = lipgloss.RoundedBorder()
+	} else {
+		appBorder = lipgloss.Border{
+			Top:         "-",
+			Bottom:      "-",
+			Left:        "|",
+			Right:       "|",
+			TopLeft:     "+",
+			TopRight:    "+",
+			BottomLeft:  "+",
+			BottomRight: "+",
+		}
+	}
+}
 
 type state int
 
@@ -101,7 +117,7 @@ func (m *AppModel) initViewport() {
 
 type tickMsg time.Time
 
-func NewAppModel(uc *usecase.ActiveMQUseCase, refreshInterval time.Duration, host string, viewStats bool) *AppModel {
+func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host string) *AppModel {
 	// Original profile detection for conditional styling
 	detectedProfile := lipgloss.ColorProfile()
 
@@ -113,9 +129,9 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, refreshInterval time.Duration, hos
 	// Initialize dynamic global styles based on profile
 	isHighColor := (detectedProfile == termenv.ANSI256 || detectedProfile == termenv.TrueColor)
 	if isHighColor {
-		titleStyle = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(lipgloss.Color("205"))
+		titleStyle = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(lipgloss.Color("#c6a0f6"))
 	} else {
-		titleStyle = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(lipgloss.Color("13"))
+		titleStyle = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(lipgloss.Color("#c6a0f6"))
 	}
 
 	// 1. Queue Table
@@ -125,12 +141,6 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, refreshInterval time.Duration, hos
 		{Title: fmt.Sprintf("%10s", "Consumers"), Width: 10},
 		{Title: fmt.Sprintf("%10s", "Enqueued"), Width: 10},
 		{Title: fmt.Sprintf("%10s", "Dequeued"), Width: 10},
-	}
-	if viewStats {
-		qCols = append(qCols,
-			table.Column{Title: "Memory", Width: 30},
-			table.Column{Title: "Disk", Width: 15},
-		)
 	}
 	qTable := table.New(table.WithColumns(qCols), table.WithFocused(true))
 
@@ -167,14 +177,14 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, refreshInterval time.Duration, hos
 	conTable := table.New(table.WithColumns(conCols), table.WithFocused(true))
 
 	s := table.DefaultStyles()
-	s.Header = s.Header.BorderStyle(asciiBorder).BorderForeground(lipgloss.Color("8")).BorderBottom(true).Bold(false)
+	s.Header = s.Header.BorderStyle(appBorder).BorderForeground(lipgloss.Color("#5b6078")).BorderBottom(true).Bold(false)
 
 	// Determine theme based on detected profile
 	isHighColor = (detectedProfile == termenv.ANSI256 || detectedProfile == termenv.TrueColor)
 
 	if isHighColor {
 		// Original 256-color theme
-		s.Selected = s.Selected.Foreground(lipgloss.Color("229")).Background(lipgloss.Color("57")).Bold(true)
+		s.Selected = s.Selected.Foreground(lipgloss.Color("#181926")).Background(lipgloss.Color("#8aadf4")).Bold(true)
 	} else {
 		// Limited terminal: Use high-contrast Black on White theme (as requested)
 		s.Selected = s.Selected.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("15")).Bold(true)
@@ -187,9 +197,9 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, refreshInterval time.Duration, hos
 
 	return &AppModel{
 		uc:               uc,
-		refreshInterval:  refreshInterval,
+		refreshInterval:  interval,
 		host:             host,
-		viewStats:        viewStats,
+		viewStats:        false,
 		lastUpdated:      time.Now(),
 		queueTable:       qTable,
 		msgTable:         mTable,

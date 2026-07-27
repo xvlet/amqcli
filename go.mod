@@ -3,6 +3,7 @@ module amqcli
 go 1.25.12
 
 require (
+	github.com/Azure/go-amqp v1.7.0
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0

@@ -151,7 +151,7 @@ func (m SearchFormModel) View() string {
 	b.WriteString(buttons + "\n")
 
 	return lipgloss.NewStyle().
-		Border(asciiBorder).
+		Border(appBorder).
 		BorderForeground(popupBorder).
 		Padding(1, 2).
 		Width(50).

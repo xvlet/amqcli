@@ -7,6 +7,7 @@ import (
 	"amqcli/adapter/inbound/ui"
 	"amqcli/adapter/outbound/activemq"
 	"amqcli/config"
+	"amqcli/domain"
 	"amqcli/usecase"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,13 +30,19 @@ func main() {
 
 	// 2. Initialize outbound adapters
 	jolokiaClient := activemq.NewJolokiaClient(mqConfig)
-	stompClient := activemq.NewStompClient(mqConfig)
+
+	var msgRepo domain.MessageRepository
+	if mqConfig.Protocol == "amqp" {
+		msgRepo = activemq.NewAmqpClient(mqConfig)
+	} else {
+		msgRepo = activemq.NewStompClient(mqConfig)
+	}
 
 	// 3. Initialize UseCases
-	uc := usecase.NewActiveMQUseCase(jolokiaClient, stompClient, cfg.Encoding)
+	uc := usecase.NewActiveMQUseCase(jolokiaClient, msgRepo, cfg.Encoding)
 
 	// 4. Initialize TUI
-	model := ui.NewAppModel(uc, cfg.RefreshInterval, mqConfig.StompURL, cfg.ViewStats)
+	model := ui.NewAppModel(uc, cfg.RefreshInterval, mqConfig.StompURL)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	// 5. Run application
