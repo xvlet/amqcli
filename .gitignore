@@ -3,8 +3,6 @@ build/
 
 planning/
 
-.env.mk
-
 vendor/
 
 temp/
