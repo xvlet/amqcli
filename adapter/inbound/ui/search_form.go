@@ -28,7 +28,9 @@ type SearchFormModel struct {
 
 func NewSearchFormModel() SearchFormModel {
 	k := textinput.New()
+	k.Cursor.Style = cursorStyle
 	k.Placeholder = "Enter keyword..."
+	k.PlaceholderStyle = noStyle
 	k.CharLimit = 100
 	k.Width = 30
 

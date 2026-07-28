@@ -46,6 +46,7 @@ func NewFormModel(title string, fields []string) FormModel {
 		t := textinput.New()
 		t.Cursor.Style = cursorStyle
 		t.CharLimit = 120
+		t.PlaceholderStyle = noStyle
 
 		if i == 0 {
 			t.Focus()

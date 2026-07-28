@@ -56,6 +56,12 @@ flowchart LR
 
 ---
 
+## 실행 화면
+
+![amqcli demo](demo.gif)
+
+---
+
 ## 시작하기
 
 ### 1. 설정 파일 (`config.yml`) 구성
@@ -83,6 +89,10 @@ environments:
     password: "prod-password"
 ```
 
+> 💡 **환경 변수 치환 지원 (Environment Variable Substitution)**
+> `config.yml` 파일 내에서 `${ENV_VAR:-default_value}` 문법을 사용할 수 있습니다. 
+> 예를 들어 `${MQ_HOST:-127.0.0.1}`은 시스템에 `MQ_HOST` 환경 변수가 설정되어 있으면 그 값을 사용하고, 없다면 기본값인 `127.0.0.1`을 사용한다는 의미입니다. 비밀번호나 주요 설정값을 하드코딩하지 않고 시스템 환경 변수로 안전하게 주입할 때 유용합니다.
+
 ### 2. amqcli 실행
 
 ```bash
@@ -97,16 +107,39 @@ environments:
 
 - `↑` / `↓` : 상하 항목 이동
 - `Enter` : 항목 선택 / 큐 내부 메시지 조회 / 메시지 상세 보기
+- `Space` : 메시지 리스트에서 다중 선택 (Multi-select)
 - `C` : 새 큐 생성 (Create)
 - `S` : 메시지 전송 (Send)
-- `P` : 큐 비우기 (Purge)
-- `D` : 큐 삭제 / 개별 메시지 삭제 (Delete)
+- `P` : 큐 비우기 (Purge) / 메시지 리스트에서 기간 단위 삭제 팝업 열기
+- `D` : 큐 삭제 / 다중 선택된 메시지 일괄 삭제
+- `M` : 메시지 이동 (상세 화면에서 타 큐로 이동)
+- `R` : 메시지 재시도 (상세 화면에서 DLQ 재처리 등에 사용)
 - `I` : 큐 통계 및 상세 정보 확인 (Info)
 - `N` : 활성 연결(Connection) 목록 조회
 - `U` : 시스템 Usage 통계(Memory/Disk/CPU 등) 토글 표시
 - `F3` / `Ctrl+F` : 메시지 검색 (Search)
 - `Esc` : 뒤로 가기
 - `q` / `Ctrl+C` : 애플리케이션 종료
+
+### 4. Client ID 포맷팅 및 연동 (Advanced)
+
+AMQP나 STOMP 클라이언트를 직접 개발할 때, `amqcli`의 연결(Connection, `N`) 및 컨슈머 목록 화면에서 클라이언트의 **Uptime(실행 시간)**과 **PID(프로세스 ID)**가 예쁘게 노출되도록 연동할 수 있습니다.
+
+`amqcli`는 클라이언트가 브로커에 접속할 때 제출하는 `client-id` (STOMP) 혹은 `ContainerID` (AMQP) 문자열 내부에서 다음 데이터를 자동 추출합니다:
+- **PID**: 4~8자리의 연속된 숫자
+- **Timestamp**: 10~14자리의 Unix Timestamp (초 또는 밀리초)
+
+**권장 포맷**:
+```text
+[어플리케이션명]-[PID]-[UnixTimestamp]-[WorkerID (또는 DrainerID)]
+```
+
+**적용 예시 (Go 언어)**:
+```go
+// 12345 = PID, 1698765432000 = Unix Timestamp(ms)
+clientID := fmt.Sprintf("my-worker-%d-%d", os.Getpid(), time.Now().UnixMilli())
+```
+위와 같은 형식으로 클라이언트 ID를 지정해주면 `amqcli` 환경에서 여러분이 만든 클라이언트 프로세스들의 상태를 훨씬 직관적으로 모니터링할 수 있습니다!
 
 ---
 

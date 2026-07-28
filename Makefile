@@ -22,7 +22,7 @@ build: clean
 	@rm -rf $(STAGING_DIR)
 	@mkdir -p $(STAGING_DIR)
 	@echo "Performing Go build (CGO_ENABLED=0)..."
-	CGO_ENABLED=0 GOPROXY=off GOWORK=off go build -mod=vendor -ldflags="$(LDFLAGS)" -o $(STAGING_DIR)/$(BINARY_NAME) $(SRC_DIR)
+	CGO_ENABLED=0 GOPROXY=off GOWORK=off go build -ldflags="$(LDFLAGS)" -o $(STAGING_DIR)/$(BINARY_NAME) $(SRC_DIR)
 	@cp config.yml $(STAGING_DIR)/
 	@UNAME_S=`uname -s`; \
 	if [ "$$UNAME_S" = "AIX" ]; then SH_PATH="/bin/ksh"; else SH_PATH="/bin/bash"; fi; \
@@ -45,7 +45,7 @@ linux_amd64:
 	@echo "Building for linux/amd64..."
 	@rm -rf build_staging_$@
 	@mkdir -p build_staging_$@ $(BUILD_DIR)
-	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME) $(SRC_DIR)
+	@GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME) $(SRC_DIR)
 	@cp config.yml build_staging_$@/
 	@tar -czf $(BUILD_DIR)/$(BINARY_NAME)_linux_amd64.tar.gz -C build_staging_$@ $(BINARY_NAME) config.yml
 	@rm -rf build_staging_$@
@@ -54,7 +54,7 @@ linux_arm64:
 	@echo "Building for linux/arm64..."
 	@rm -rf build_staging_$@
 	@mkdir -p build_staging_$@ $(BUILD_DIR)
-	@GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -mod=vendor -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME) $(SRC_DIR)
+	@GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME) $(SRC_DIR)
 	@cp config.yml build_staging_$@/
 	@tar -czf $(BUILD_DIR)/$(BINARY_NAME)_linux_arm64.tar.gz -C build_staging_$@ $(BINARY_NAME) config.yml
 	@rm -rf build_staging_$@
@@ -63,7 +63,7 @@ darwin_amd64:
 	@echo "Building for darwin/amd64 (Mac Intel)..."
 	@rm -rf build_staging_$@
 	@mkdir -p build_staging_$@ $(BUILD_DIR)
-	@GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME) $(SRC_DIR)
+	@GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME) $(SRC_DIR)
 	@cp config.yml build_staging_$@/
 	@tar -czf $(BUILD_DIR)/$(BINARY_NAME)_darwin_amd64.tar.gz -C build_staging_$@ $(BINARY_NAME) config.yml
 	@rm -rf build_staging_$@
@@ -72,7 +72,7 @@ darwin_arm64:
 	@echo "Building for darwin/arm64 (Mac Apple Silicon)..."
 	@rm -rf build_staging_$@
 	@mkdir -p build_staging_$@ $(BUILD_DIR)
-	@GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -mod=vendor -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME) $(SRC_DIR)
+	@GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME) $(SRC_DIR)
 	@cp config.yml build_staging_$@/
 	@tar -czf $(BUILD_DIR)/$(BINARY_NAME)_darwin_arm64.tar.gz -C build_staging_$@ $(BINARY_NAME) config.yml
 	@rm -rf build_staging_$@
@@ -81,7 +81,7 @@ windows_amd64:
 	@echo "Building for windows/amd64..."
 	@rm -rf build_staging_$@
 	@mkdir -p build_staging_$@ $(BUILD_DIR)
-	@GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME).exe $(SRC_DIR)
+	@GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME).exe $(SRC_DIR)
 	@cp config.yml build_staging_$@/
 	@cd build_staging_$@ && zip -q ../$(BUILD_DIR)/$(BINARY_NAME)_windows_amd64.zip $(BINARY_NAME).exe config.yml
 	@rm -rf build_staging_$@
@@ -90,7 +90,7 @@ windows_arm64:
 	@echo "Building for windows/arm64..."
 	@rm -rf build_staging_$@
 	@mkdir -p build_staging_$@ $(BUILD_DIR)
-	@GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -mod=vendor -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME).exe $(SRC_DIR)
+	@GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -o build_staging_$@/$(BINARY_NAME).exe $(SRC_DIR)
 	@cp config.yml build_staging_$@/
 	@cd build_staging_$@ && zip -q ../$(BUILD_DIR)/$(BINARY_NAME)_windows_arm64.zip $(BINARY_NAME).exe config.yml
 	@rm -rf build_staging_$@

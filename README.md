@@ -56,6 +56,12 @@ flowchart LR
 
 ---
 
+## Demo
+
+![amqcli demo](demo.gif)
+
+---
+
 ## Quick Start
 
 ### 1. Configuration (`config.yml`)
@@ -83,6 +89,10 @@ environments:
     password: "prod-password"
 ```
 
+> 💡 **Environment Variable Substitution**
+> You can use the `${ENV_VAR:-default_value}` syntax within `config.yml`. 
+> For example, `${MQ_HOST:-127.0.0.1}` tells the application to use the `MQ_HOST` environment variable if it's set in your system. If it is not set, it will fall back to the default value `127.0.0.1`. This is highly useful for securely injecting credentials or host names without hardcoding them in the file.
+
 ### 2. Run amqcli
 
 ```bash
@@ -97,16 +107,39 @@ environments:
 
 - `↑` / `↓` : Navigate items.
 - `Enter` : Select / Browse Queue / View Message Details.
+- `Space` : Multi-select messages in the message list.
 - `C` : Create Queue.
 - `S` : Send Message.
-- `P` : Purge Queue.
-- `D` : Delete Queue / Message.
+- `P` : Purge Queue (or open Time-based Delete in Message List).
+- `D` : Delete Queue / Selected Messages.
+- `M` : Move Message (in Message Details).
+- `R` : Retry Message (in Message Details, useful for DLQ).
 - `I` : View Queue Info & Statistics.
 - `N` : View active Connections.
 - `U` : Toggle System Usage (Memory/Disk/CPU).
 - `F3` / `Ctrl+F` : Search messages.
 - `Esc` : Go Back.
 - `q` / `Ctrl+C` : Quit application.
+
+### 4. Client ID Formatting (Advanced)
+
+If you are developing your own AMQP or STOMP clients and want `amqcli` to correctly display the **Uptime** and **PID** of your client connections (in the Connections `N` or Consumers views), you should format your `client-id` (STOMP) or `ContainerID` (AMQP) to include them.
+
+`amqcli` parses the client ID using the following regular expressions:
+- **PID**: A 4 to 8 digit number.
+- **Timestamp**: A 10 to 14 digit Unix timestamp (Seconds or Milliseconds).
+
+**Recommended Format**:
+```text
+[Prefix]-[PID]-[UnixTimestamp]-[WorkerID (or DrainerID)]
+```
+
+**Example (Go)**:
+```go
+// 12345 = PID, 1698765432000 = Unix Milliseconds
+clientID := fmt.Sprintf("my-worker-%d-%d", os.Getpid(), time.Now().UnixMilli())
+```
+By including these numeric blocks in your client ID, `amqcli` will automatically extract them and display beautiful monitoring metrics for your active clients!
 
 ---
 

@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25.12-alpine AS builder
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ WORKDIR /app
 COPY . .
 
 # Build the binary statically
-RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -ldflags="-w -s" -o build/amqcli cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o build/amqcli cmd/main.go
 
 # Final stage
 FROM alpine:latest
