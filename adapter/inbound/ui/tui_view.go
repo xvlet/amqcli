@@ -6,17 +6,18 @@ import (
 	"strings"
 
 	"amqcli/config"
+
 	"github.com/charmbracelet/lipgloss"
 )
 
 func (m *AppModel) View() string {
-	var headerOk string
-	brokerInfoStr := ""
-	sysUsageStr := ""
+	// no headerOk anymore
 	// Dynamic colors based on profile
 
 	dimPipe := lipgloss.NewStyle().Foreground(lipgloss.Color("#6e738d")).Render(" | ")
 
+	var brokerInfoStr string
+	var topUsageLeft, topUsageRight string
 	if m.brokerInfo != "" {
 		brokerInfoStr = fmt.Sprintf(" [%s]", m.brokerInfo)
 
@@ -33,8 +34,8 @@ func (m *AppModel) View() string {
 				storeStr = fmt.Sprintf("Store %.2f%% (%s / %s)", actualPercent, formatBytes(exactStoreUsed), formatBytes(m.brokerStats.StoreLimit))
 			}
 
-			sysUsageStr = fmt.Sprintf("   %s%s%s%s%s%s%s",
-				cyanStyle(fmt.Sprintf("System Usage: CPU %.1f%%", m.brokerStats.CPUUsage)),
+			topUsageLeft = cyanStyle(fmt.Sprintf("System Usage: CPU %.1f%%", m.brokerStats.CPUUsage))
+			topUsageRight = fmt.Sprintf("%s%s%s%s%s%s",
 				dimPipe,
 				cyanStyle(fmt.Sprintf("Memory %d%%", m.brokerStats.MemoryPercentUsage)),
 				dimPipe,
@@ -44,11 +45,29 @@ func (m *AppModel) View() string {
 		}
 	}
 
+	var connPart string
 	if m.err != nil {
-		headerOk = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("%s Disconnected", m.host))
+		connPart = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("%s Disconnected", m.host))
 	} else {
-		connPart := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#a6da95")).Render(fmt.Sprintf("%s Connected%s", m.host, brokerInfoStr))
-		headerOk = lipgloss.NewStyle().MarginLeft(2).Render(connPart + sysUsageStr)
+		connPart = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#a6da95")).Render(fmt.Sprintf("%s Connected%s", m.host, brokerInfoStr))
+	}
+
+	colors := []string{"#a6da95", "#9cdec4", "#91e1d3", "#87e5e2", "#8bd5ca", "#81c8be"}
+	letters := []string{"A", "M", "Q", "C", "L", "I"}
+	var logoText string
+	for i, l := range letters {
+		logoText += lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(colors[i])).Render(l + " ")
+	}
+
+	wrapHeader := func(left string) string {
+		leftWidth := lipgloss.Width(left)
+		logoWidth := lipgloss.Width(logoText)
+		space := m.width - leftWidth - logoWidth - 2
+		if space < 0 {
+			space = 0
+		}
+		headerLine := lipgloss.JoinHorizontal(lipgloss.Top, left, strings.Repeat(" ", space), logoText)
+		return "\n" + headerLine
 	}
 
 	// Determine universal box scaling widths and footer alignment
@@ -62,17 +81,40 @@ func (m *AppModel) View() string {
 	g := lipgloss.NewStyle().Foreground(lipgloss.Color("#a5adcb")).Render
 
 	timeStr := m.lastUpdated.Format("2006-01-02 15:04:05")
-	versionText := lipgloss.NewStyle().Foreground(lipgloss.Color("#b7bdf8")).Render(fmt.Sprintf("amqcli (%s)", config.Version))
 	lastUpdatedText := g(fmt.Sprintf("Last Updated: %s", timeStr))
-	rightText := fmt.Sprintf("%s%s%s", versionText, dimPipe, lastUpdatedText)
-	leftText := fmt.Sprintf("%s%s", y("q"), g(" : Quit"))
+
+	bottomLeftCol := connPart
+	bottomRightBase := fmt.Sprintf("%s%s", dimPipe, lastUpdatedText)
+
+	versionStr := lipgloss.NewStyle().Foreground(lipgloss.Color("#5b6078")).Render(fmt.Sprintf("amqcli (%s)", config.Version))
+	topRightWidth := lipgloss.Width(topUsageRight)
+
+	padLen := topRightWidth - lipgloss.Width(bottomRightBase) - lipgloss.Width(versionStr)
+	var bottomRightCol string
+	if padLen > 0 {
+		bottomRightCol = bottomRightBase + strings.Repeat(" ", padLen) + versionStr
+	} else {
+		bottomRightCol = bottomRightBase + "  " + versionStr
+	}
+
+	leftCol := lipgloss.JoinVertical(lipgloss.Right, topUsageLeft, bottomLeftCol)
+	rightCol := lipgloss.JoinVertical(lipgloss.Left, topUsageRight, bottomRightCol)
+
+	rightBottomBlock := lipgloss.JoinHorizontal(lipgloss.Top, leftCol, rightCol)
+	leftBottomBlock := fmt.Sprintf("%s%s", y("q"), g(" : Quit"))
 
 	footerW := contentW + 2 // Box inner content (contentW) + 2 horizontal borders
-	spaceW := footerW - lipgloss.Width(leftText)
+	spaceW := footerW - lipgloss.Width(leftBottomBlock) - lipgloss.Width(rightBottomBlock)
 	if spaceW < 0 {
 		spaceW = 0
 	}
-	footerOk := lipgloss.NewStyle().MarginLeft(2).Render(lipgloss.JoinHorizontal(lipgloss.Top, leftText, lipgloss.NewStyle().Width(spaceW).Align(lipgloss.Right).Render(rightText)))
+
+	// Since leftCol/rightCol already have 2 lines, we join the bottom row logic
+	// The left side "q : Quit" should align with the bottom line of the right block.
+	// We can do this by prepending a blank line to the left side.
+	leftBlock := lipgloss.JoinVertical(lipgloss.Left, "", leftBottomBlock)
+
+	footerOk := lipgloss.NewStyle().MarginLeft(2).Render(lipgloss.JoinHorizontal(lipgloss.Top, leftBlock, lipgloss.NewStyle().Width(spaceW).Render(""), rightBottomBlock))
 
 	if m.currentState == stateList {
 		var subHeader string
@@ -86,7 +128,7 @@ func (m *AppModel) View() string {
 		// Use global contentW dimension
 		tableBox := lipgloss.NewStyle().MarginLeft(2).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Padding(0, 1).Width(contentW).Render(m.queueTable.View())
 
-		return lipgloss.JoinVertical(lipgloss.Left, headerOk, subHeader, tableBox, footerOk)
+		return lipgloss.JoinVertical(lipgloss.Left, wrapHeader(subHeader), tableBox, footerOk)
 	}
 
 	if m.currentState == stateMessageList {
@@ -111,7 +153,7 @@ func (m *AppModel) View() string {
 		// Use global contentW dimension
 		tableBox := lipgloss.NewStyle().MarginLeft(2).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Padding(0, 1).Width(contentW).Render(m.msgTable.View())
 
-		return lipgloss.JoinVertical(lipgloss.Left, headerOk, sub, tableBox, footerOk)
+		return lipgloss.JoinVertical(lipgloss.Left, wrapHeader(sub), tableBox, footerOk)
 	}
 
 	if m.currentState == stateMessageDetail && m.selectedMessage != nil {
@@ -165,7 +207,7 @@ func (m *AppModel) View() string {
 
 		detailBox := lipgloss.NewStyle().MarginLeft(2).Padding(1, 2).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Width(contentW).Render(m.viewport.View())
 
-		return lipgloss.JoinVertical(lipgloss.Left, headerOk, sub, detailBox, footerOk)
+		return lipgloss.JoinVertical(lipgloss.Left, wrapHeader(sub), detailBox, footerOk)
 	}
 
 	if m.currentState == stateQueueInfo {
@@ -180,7 +222,7 @@ func (m *AppModel) View() string {
 			var b strings.Builder
 			b.WriteString("\n  Loading queue details...")
 			infoBox := lipgloss.NewStyle().MarginLeft(2).Padding(1, 2).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Width(contentW).Render(b.String())
-			return lipgloss.JoinVertical(lipgloss.Left, headerOk, sub, infoBox, footerOk)
+			return lipgloss.JoinVertical(lipgloss.Left, wrapHeader(sub), infoBox, footerOk)
 		}
 
 		qd := m.selectedQueueDetail
@@ -231,7 +273,7 @@ func (m *AppModel) View() string {
 		combined := lipgloss.JoinVertical(lipgloss.Left, statsStr, tableStr)
 		infoBox := lipgloss.NewStyle().MarginLeft(2).Padding(0, 1).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Width(contentW).Render(combined)
 
-		return lipgloss.JoinVertical(lipgloss.Left, headerOk, sub, infoBox, footerOk)
+		return lipgloss.JoinVertical(lipgloss.Left, wrapHeader(sub), infoBox, footerOk)
 	}
 
 	if m.currentState == stateConnections {
@@ -244,7 +286,7 @@ func (m *AppModel) View() string {
 
 		tableBox := lipgloss.NewStyle().MarginLeft(2).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Padding(0, 1).Width(contentW).Render(m.connectionsTable.View())
 
-		return lipgloss.JoinVertical(lipgloss.Left, headerOk, sub, tableBox, footerOk)
+		return lipgloss.JoinVertical(lipgloss.Left, wrapHeader(sub), tableBox, footerOk)
 	}
 
 	// Confirm Delete Popup
@@ -262,7 +304,7 @@ func (m *AppModel) View() string {
 		} else {
 			title = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#c6a0f6")).Render("Delete Queue")
 			body = fmt.Sprintf("Are you sure you want to delete:\n\n  %s",
-				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#181926")).Render(m.confirmTarget))
+				lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14")).Render(m.confirmTarget))
 		}
 
 		okStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#a5adcb")).Padding(0, 1)
