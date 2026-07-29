@@ -58,7 +58,7 @@ flowchart LR
 
 ## 실행 화면
 
-<video src="demo.mp4" autoplay loop muted playsinline width="80%"></video>
+<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="80%">
 
 ---
 
