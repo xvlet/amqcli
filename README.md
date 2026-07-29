@@ -58,7 +58,7 @@ flowchart LR
 
 ## Demo
 
-![amqcli demo](demo.gif)
+<video src="demo.mp4" autoplay loop muted playsinline width="80%"></video>
 
 ---
 
@@ -145,7 +145,7 @@ By including these numeric blocks in your client ID, `amqcli` will automatically
 
 ## Installation
 
-You can install `amqcli` using one of the following methods. The `amqcli` binary is distributed as a statically linked executable (`CGO_ENABLED=0`), ensuring it runs independently without any external dependency issues.
+You can install `amqcli` using one of the following methods.
 
 ### 1. Homebrew (macOS / Linux)
 You can easily install or upgrade `amqcli` using Homebrew via our custom tap:
@@ -189,6 +189,7 @@ You can run `amqcli` directly via Docker using our official image hosted on GitH
 ```bash
 docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:latest
 ```
+> **Note:** Ensure that a `config.yml` file is created in your current directory **before** running this command. If the file does not exist locally, Docker will incorrectly create and mount it as a directory.
 
 ---
 

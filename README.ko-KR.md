@@ -58,7 +58,7 @@ flowchart LR
 
 ## 실행 화면
 
-![amqcli demo](demo.gif)
+<video src="demo.mp4" autoplay loop muted playsinline width="80%"></video>
 
 ---
 
@@ -145,7 +145,7 @@ clientID := fmt.Sprintf("my-worker-%d-%d", os.Getpid(), time.Now().UnixMilli())
 
 ## 설치 방법
 
-다음 방법 중 하나를 선택하여 `amqcli`를 설치할 수 있습니다. `amqcli` 바이너리는 정적 링크된 실행 파일(`CGO_ENABLED=0`)로 배포되므로 별도의 외부 종속성 없이 독립적으로 실행됩니다.
+다음 방법 중 하나를 선택하여 `amqcli`를 설치할 수 있습니다.
 
 ### 1. Homebrew (macOS / Linux)
 커스텀 탭을 통해 Homebrew로 매우 간단하게 설치 및 업그레이드할 수 있습니다:
@@ -189,6 +189,7 @@ GitHub Container Registry(GHCR)를 통해 배포되는 공식 Docker 이미지�
 ```bash
 docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:latest
 ```
+> **주의:** 이 명령어를 실행하기 **전**에 현재 디렉토리에 반드시 `config.yml` 파일이 존재해야 합니다. 로컬에 파일이 없을 경우 Docker가 이를 폴더(디렉토리)로 인식하고 생성하여 마운트하므로 실행 에러가 발생합니다.
 
 ---
 
