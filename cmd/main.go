@@ -21,6 +21,7 @@ var (
 func main() {
 	env := flag.String("env", "dev", "Environment profile to use (e.g. dev, prod)")
 	showVersion := flag.Bool("version", false, "Print application version")
+	configPath := flag.String("config", "config.yml", "Path to configuration file")
 	flag.Parse()
 
 	if *showVersion {
@@ -29,7 +30,7 @@ func main() {
 	}
 
 	// 1. Load config
-	cfg, err := config.LoadConfig("config.yml")
+	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
