@@ -4,11 +4,11 @@ import (
 	"flag"
 	"log"
 
-	"amqcli/adapter/inbound/ui"
-	"amqcli/adapter/outbound/activemq"
-	"amqcli/config"
-	"amqcli/domain"
-	"amqcli/usecase"
+	"github.com/xvlet/amqcli/adapter/inbound/ui"
+	"github.com/xvlet/amqcli/adapter/outbound/activemq"
+	"github.com/xvlet/amqcli/config"
+	"github.com/xvlet/amqcli/domain"
+	"github.com/xvlet/amqcli/usecase"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

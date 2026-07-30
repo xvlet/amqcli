@@ -1,9 +1,9 @@
 package usecase
 
 import (
-	"amqcli/domain"
 	"bytes"
 	"fmt"
+	"github.com/xvlet/amqcli/domain"
 	"io"
 	"strconv"
 	"strings"

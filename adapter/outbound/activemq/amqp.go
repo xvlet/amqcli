@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"amqcli/config"
-	"amqcli/domain"
+	"github.com/xvlet/amqcli/config"
+	"github.com/xvlet/amqcli/domain"
 
 	"github.com/Azure/go-amqp"
 )

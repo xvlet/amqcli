@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"amqcli/config"
-	"amqcli/domain"
+	"github.com/xvlet/amqcli/config"
+	"github.com/xvlet/amqcli/domain"
 )
 
 var (

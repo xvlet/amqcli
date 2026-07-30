@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"amqcli/config"
+	"github.com/xvlet/amqcli/config"
 
 	"github.com/charmbracelet/lipgloss"
 )

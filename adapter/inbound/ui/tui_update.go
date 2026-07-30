@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"amqcli/domain"
 	"fmt"
+	"github.com/xvlet/amqcli/domain"
 	"os"
 	"sort"
 	"strconv"

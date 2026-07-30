@@ -1,4 +1,4 @@
-module amqcli
+module github.com/xvlet/amqcli
 
 go 1.25.12
 

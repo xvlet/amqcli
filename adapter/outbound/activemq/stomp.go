@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"amqcli/config"
-	"amqcli/domain"
+	"github.com/xvlet/amqcli/config"
+	"github.com/xvlet/amqcli/domain"
 
 	"github.com/go-stomp/stomp/v3"
 	"github.com/go-stomp/stomp/v3/frame"

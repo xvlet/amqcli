@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"amqcli/domain"
-	"amqcli/usecase"
+	"github.com/xvlet/amqcli/domain"
+	"github.com/xvlet/amqcli/usecase"
 
 	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/viewport"
