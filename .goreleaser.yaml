@@ -1,0 +1,78 @@
+version: 2
+project_name: amqcli
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: amqcli
+    main: ./cmd/main.go
+    binary: amqcli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.Version={{.Version}}
+      
+  - id: amqcli-aix
+    main: ./cmd/main.go
+    binary: amqcli
+    env:
+      - CGO_ENABLED=0
+      - GOPPC64=power8
+    goos:
+      - aix
+    goarch:
+      - ppc64
+    ldflags:
+      - -w -X main.Version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+brews:
+  - name: amqcli
+    repository:
+      owner: xvlet
+      name: homebrew-amqcli
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    
+    directory: Formula
+    
+    homepage: "https://github.com/xvlet/amqcli"
+    description: "ActiveMQ TUI Client - Manage and monitor ActiveMQ queues and messages via terminal"
+    
+    install: |
+      bin.install "amqcli"
+    
+    test: |
+      system "#{bin}/amqcli", "--version"

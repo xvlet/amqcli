@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 
 	"github.com/xvlet/amqcli/adapter/inbound/ui"
@@ -13,9 +14,19 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+var (
+	Version = "dev"
+)
+
 func main() {
 	env := flag.String("env", "dev", "Environment profile to use (e.g. dev, prod)")
+	showVersion := flag.Bool("version", false, "Print application version")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("amqcli version %s\n", Version)
+		return
+	}
 
 	// 1. Load config
 	cfg, err := config.LoadConfig("config.yml")
