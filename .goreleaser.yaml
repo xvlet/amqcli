@@ -20,7 +20,7 @@ builds:
       - arm64
     ldflags:
       - -s -w -X main.Version={{.Version}}
-      
+
   - id: amqcli-aix
     main: ./cmd/main.go
     binary: amqcli
@@ -61,18 +61,18 @@ brews:
       owner: xvlet
       name: homebrew-amqcli
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    
+
     commit_author:
       name: goreleaserbot
       email: bot@goreleaser.com
-    
+
     directory: Formula
-    
+
     homepage: "https://github.com/xvlet/amqcli"
     description: "ActiveMQ TUI Client - Manage and monitor ActiveMQ queues and messages via terminal"
-    
+
     install: |
       bin.install "amqcli"
-    
+
     test: |
       system "#{bin}/amqcli", "--version"
