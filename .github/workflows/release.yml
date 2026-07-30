@@ -23,15 +23,15 @@ jobs:
           go-version: '1.25' # Ensure this matches your project's Go version
           cache: true
 
-      - name: Build all architectures
-        run: make release
-
-      - name: Create GitHub Release and Upload Assets
-        uses: softprops/action-gh-release@v2
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
         with:
-          files: build/*
+          distribution: goreleaser
+          version: '~> v2'
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
 
   docker-release:
     runs-on: ubuntu-latest
