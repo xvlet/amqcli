@@ -41,6 +41,10 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+    files:
+      - config.yml
+      - README.md
+      - LICENSE
 
 checksum:
   name_template: 'checksums.txt'
@@ -73,6 +77,7 @@ brews:
 
     install: |
       bin.install "amqcli"
+      (etc/"amqcli").install "config.yml"
 
     test: |
       system "#{bin}/amqcli", "--version"

@@ -31,9 +31,31 @@ type ActiveMQConfig struct {
 }
 
 func LoadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path) // #nosec G304 -- path is a fixed config file path from CLI args, not user-controlled input
+	var data []byte
+	var err error
+
+	// 1. Try reading the specified path (or "config.yml" from current directory)
+	// #nosec G304 -- config path is fixed or loaded from user's CLI argument
+	data, err = os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
+		// 2. Fallback to home directory config (~/.amqcli.yml)
+		homeDir, homeErr := os.UserHomeDir()
+		if homeErr == nil {
+			homeConfigPath := homeDir + "/.amqcli.yml"
+			// #nosec G304 -- config path is safe
+			data, err = os.ReadFile(homeConfigPath)
+			if err != nil {
+				// 3. Create default template if it doesn't exist anywhere
+				fmt.Printf("Config file not found. Creating default template at: %s\n", homeConfigPath)
+				createDefaultConfig(homeConfigPath)
+				// #nosec G304 -- config path is safe
+				data, err = os.ReadFile(homeConfigPath)
+			}
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to read config file (try creating ~/.amqcli.yml): %w", err)
 	}
 
 	// Expand environment variables (e.g. ${VAR} or ${VAR:-default})
@@ -100,4 +122,29 @@ func expandEnvFunc(k string) string {
 		return "${" + k + "}"
 	}
 	return val
+}
+
+func createDefaultConfig(path string) {
+	defaultTemplate := `refresh_interval: 3s
+encoding: "utf-8"
+
+environments:
+  dev:
+    protocol: stomp
+    host: 127.0.0.1
+    stomp_port: 61613
+    amqp_port: 5672
+    web_port: 8161
+    username: admin
+    password: admin
+  prod:
+    protocol: amqp
+    host: 192.168.0.100
+    stomp_port: 61613
+    amqp_port: 5672
+    web_port: 8161
+    username: myuser
+    password: mypassword
+`
+	_ = os.WriteFile(path, []byte(defaultTemplate), 0600)
 }
