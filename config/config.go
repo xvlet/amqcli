@@ -37,27 +37,51 @@ func LoadConfig(path string) (*Config, error) {
 	// 1. Try reading the specified path (or "config.yml" from current directory)
 	// #nosec G304 -- config path is fixed or loaded from user's CLI argument
 	data, err = os.ReadFile(path)
-	if err != nil {
-		// 2. Fallback to home directory config (~/.amqcli.yml)
-		homeDir, homeErr := os.UserHomeDir()
-		if homeErr == nil {
-			homeConfigPath := homeDir + "/.amqcli.yml"
-			// #nosec G304 -- config path is safe
-			data, err = os.ReadFile(homeConfigPath)
-			if err != nil {
-				// 3. Create default template if it doesn't exist anywhere
-				fmt.Printf("Config file not found. Creating default template at: %s\n", homeConfigPath)
-				createDefaultConfig(homeConfigPath)
-				// #nosec G304 -- config path is safe
-				data, err = os.ReadFile(homeConfigPath)
-			}
+	if err == nil {
+		return parseConfig(data)
+	}
+
+	homeDir, homeErr := os.UserHomeDir()
+	homeConfigPath := ""
+	if homeErr == nil {
+		homeConfigPath = homeDir + "/.amqcli.yml"
+	}
+
+	// 2. Check fallback locations
+	fallbacks := []string{
+		homeConfigPath,
+		"/opt/homebrew/etc/amqcli/config.yml",
+		"/usr/local/etc/amqcli/config.yml",
+		"/home/linuxbrew/.linuxbrew/etc/amqcli/config.yml",
+		"/etc/amqcli/config.yml",
+	}
+
+	for _, fb := range fallbacks {
+		if fb == "" {
+			continue
+		}
+		// #nosec G304 -- fallback paths are hardcoded and safe
+		data, err = os.ReadFile(fb)
+		if err == nil {
+			return parseConfig(data)
 		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file (try creating ~/.amqcli.yml): %w", err)
+	// 3. Create default template if it doesn't exist anywhere
+	if homeConfigPath != "" {
+		fmt.Printf("Config file not found. Creating default template at: %s\n", homeConfigPath)
+		createDefaultConfig(homeConfigPath)
+		// #nosec G304 -- config path is safe
+		data, err = os.ReadFile(homeConfigPath)
+		if err == nil {
+			return parseConfig(data)
+		}
 	}
 
+	return nil, fmt.Errorf("failed to read or create config file: %w", err)
+}
+
+func parseConfig(data []byte) (*Config, error) {
 	// Expand environment variables (e.g. ${VAR} or ${VAR:-default})
 	expandedData := os.Expand(string(data), expandEnvFunc)
 
