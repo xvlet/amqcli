@@ -79,6 +79,14 @@ New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 $DestPath = Join-Path $InstallDir "$BIN.exe"
 Move-Item -Path $BinPath.FullName -Destination $DestPath -Force
 
+# Install config file if it doesn't exist
+$ConfigDest = Join-Path $env:USERPROFILE ".amqcli.yml"
+$ConfigSrc = Join-Path $TempDir "config.yml"
+if (-not (Test-Path $ConfigDest) -and (Test-Path $ConfigSrc)) {
+    Copy-Item -Path $ConfigSrc -Destination $ConfigDest
+    Write-Host "  > installed default config to $ConfigDest" -ForegroundColor Green
+}
+
 Write-Host "  > installed $BIN to $DestPath" -ForegroundColor Green
 
 # Cleanup

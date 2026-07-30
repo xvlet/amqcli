@@ -80,6 +80,12 @@ main() {
     mv "$BIN_PATH" "${INSTALL_DIR}/${BIN}"
     chmod +x "${INSTALL_DIR}/${BIN}"
 
+    # Install config file if it doesn't exist
+    if [ ! -f "$HOME/.amqcli.yml" ] && [ -f "$TMP/config.yml" ]; then
+        cp "$TMP/config.yml" "$HOME/.amqcli.yml"
+        log "installed default config to $HOME/.amqcli.yml"
+    fi
+
     log "installed ${BIN} to ${INSTALL_DIR}/${BIN}"
 
     # check PATH
