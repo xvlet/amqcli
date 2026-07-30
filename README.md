@@ -42,6 +42,12 @@ flowchart LR
 
 ---
 
+## Demo
+
+<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="80%">
+
+---
+
 ## Key Features
 
 <table>
@@ -56,9 +62,63 @@ flowchart LR
 
 ---
 
-## Demo
+## Prerequisites
 
-<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="80%">
+`amqcli` is a statically compiled Go binary with **no external dependencies required** to run.
+
+| Tool | Purpose |
+|------|---------|
+| [Apache ActiveMQ](https://activemq.apache.org/) | Target broker to manage. Ensure Jolokia / REST API and AMQP/STOMP ports are accessible. |
+
+---
+
+## Installation
+
+You can install `amqcli` using one of the following methods.
+
+### 1. Homebrew (macOS / Linux)
+You can easily install or upgrade `amqcli` using Homebrew via our custom tap:
+```bash
+brew tap xvlet/amqcli
+brew install amqcli
+```
+
+### 2. Quick Install Scripts
+The easiest way to install the latest release is by using the provided installation scripts for your operating system.
+
+**macOS / Linux (Shell)**
+```bash
+curl -fsSL https://raw.githubusercontent.com/xvlet/amqcli/master/install.sh | sh
+```
+
+**Windows (PowerShell)**
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/xvlet/amqcli/master/install.ps1 | iex"
+```
+
+### 3. Using Go (go install)
+If you have Go (1.25+) installed, you can easily install `amqcli` via `go install`:
+```bash
+go install github.com/xvlet/amqcli/cmd/amqcli@latest
+```
+
+### 4. Download Pre-built Binary
+If you don't have Go installed and just want to use the executable, download the latest pre-built release.
+- [Download binary from Releases](https://github.com/xvlet/amqcli/releases)
+
+After downloading, extract the archive and run it:
+```bash
+tar -xzf amqcli_linux_amd64.tar.gz
+chmod +x amqcli
+./amqcli -h
+```
+
+### 5. Docker (GHCR)
+You can run `amqcli` directly via Docker using our official image hosted on GitHub Container Registry (GHCR):
+```bash
+docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:latest
+```
+> **Note:** Ensure that a `config.yml` file is created in your current directory **before** running this command. If the file does not exist locally, Docker will incorrectly create and mount it as a directory.
 
 ---
 
@@ -121,7 +181,11 @@ environments:
 - `Esc` : Go Back.
 - `q` / `Ctrl+C` : Quit application.
 
-### 4. Client ID Formatting (Advanced)
+---
+
+## Advanced
+
+### Client ID Formatting
 
 If you are developing your own AMQP or STOMP clients and want `amqcli` to correctly display the **Uptime** and **PID** of your client connections (in the Connections `N` or Consumers views), you should format your `client-id` (STOMP) or `ContainerID` (AMQP) to include them.
 
@@ -140,63 +204,3 @@ If you are developing your own AMQP or STOMP clients and want `amqcli` to correc
 clientID := fmt.Sprintf("my-worker-%d-%d", os.Getpid(), time.Now().UnixMilli())
 ```
 By including these numeric blocks in your client ID, `amqcli` will automatically extract them and display beautiful monitoring metrics for your active clients!
-
----
-
-## Installation
-
-You can install `amqcli` using one of the following methods.
-
-### 1. Homebrew (macOS / Linux)
-You can easily install or upgrade `amqcli` using Homebrew via our custom tap:
-```bash
-brew tap xvlet/amqcli
-brew install amqcli
-```
-
-### 2. Quick Install Scripts
-The easiest way to install the latest release is by using the provided installation scripts for your operating system.
-
-**macOS / Linux (Shell)**
-```bash
-curl -fsSL https://raw.githubusercontent.com/xvlet/amqcli/master/install.sh | sh
-```
-
-**Windows (PowerShell)**
-```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/xvlet/amqcli/master/install.ps1 | iex"
-```
-
-### 3. Using Go (go install)
-If you have Go (1.25+) installed, you can easily install `amqcli` via `go install`:
-```bash
-go install github.com/xvlet/amqcli/cmd/amqcli@latest
-```
-
-### 4. Download Pre-built Binary
-If you don't have Go installed and just want to use the executable, download the latest pre-built release.
-- [Download binary from Releases](https://github.com/xvlet/amqcli/releases)
-
-After downloading, extract the archive and run it:
-```bash
-tar -xzf amqcli_linux_amd64.tar.gz
-chmod +x amqcli
-./amqcli -h
-```
-
-### 5. Docker (GHCR)
-You can run `amqcli` directly via Docker using our official image hosted on GitHub Container Registry (GHCR):
-```bash
-docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:latest
-```
-> **Note:** Ensure that a `config.yml` file is created in your current directory **before** running this command. If the file does not exist locally, Docker will incorrectly create and mount it as a directory.
-
----
-
-## Prerequisites
-
-`amqcli` is a statically compiled Go binary with **no external dependencies required** to run.
-
-| Tool | Purpose |
-|------|---------|
-| [Apache ActiveMQ](https://activemq.apache.org/) | Target broker to manage. Ensure Jolokia / REST API and AMQP/STOMP ports are accessible. |

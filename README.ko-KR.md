@@ -42,6 +42,12 @@ flowchart LR
 
 ---
 
+## 실행 화면
+
+<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="80%">
+
+---
+
 ## 주요 기능
 
 <table>
@@ -56,9 +62,63 @@ flowchart LR
 
 ---
 
-## 실행 화면
+## 요구 사항
 
-<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="80%">
+`amqcli`는 단일 바이너리로 정적 컴파일(Statically compiled) 되므로, 실행 시 **외부 라이브러리 의존성을 요구하지 않습니다**.
+
+| 도구 | 목적 |
+|------|---------|
+| [Apache ActiveMQ](https://activemq.apache.org/) | 대상 메시지 브로커입니다. 내부적으로 Jolokia(REST API) 및 AMQP/STOMP 포트 접근이 허용되어야 정상 작동합니다. |
+
+---
+
+## 설치 방법
+
+다음 방법 중 하나를 선택하여 `amqcli`를 설치할 수 있습니다.
+
+### 1. Homebrew (macOS / Linux)
+커스텀 탭을 통해 Homebrew로 매우 간단하게 설치 및 업그레이드할 수 있습니다:
+```bash
+brew tap xvlet/amqcli
+brew install amqcli
+```
+
+### 2. 간편 설치 스크립트 (Quick Install)
+운영체제에 맞는 설치 스크립트를 사용하여 최신 릴리즈를 가장 쉽게 설치하는 방법입니다.
+
+**macOS / Linux (Shell)**
+```bash
+curl -fsSL https://raw.githubusercontent.com/xvlet/amqcli/master/install.sh | sh
+```
+
+**Windows (PowerShell)**
+```powershell
+powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/xvlet/amqcli/master/install.ps1 | iex"
+```
+
+### 3. Go 명령어 사용 (go install)
+Go(1.25 이상)가 설치된 환경이라면 `go install` 명령어로 쉽게 설치할 수 있습니다:
+```bash
+go install github.com/xvlet/amqcli/cmd/amqcli@latest
+```
+
+### 4. 컴파일된 바이너리 다운로드
+Go가 설치되어 있지 않고 실행 파일만 바로 사용하고 싶다면, 최신 릴리즈에서 바이너리를 직접 다운로드하세요.
+- [Releases 페이지에서 바이너리 다운로드](https://github.com/xvlet/amqcli/releases)
+
+다운로드 후 압축을 풀고 실행 권한을 부여한 뒤 실행합니다:
+```bash
+tar -xzf amqcli_linux_amd64.tar.gz
+chmod +x amqcli
+./amqcli -h
+```
+
+### 5. Docker (GHCR)
+GitHub Container Registry(GHCR)를 통해 배포되는 공식 Docker 이미지를 이용해 바로 실행할 수 있습니다:
+```bash
+docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:latest
+```
+> **주의:** 이 명령어를 실행하기 **전**에 현재 디렉토리에 반드시 `config.yml` 파일이 존재해야 합니다. 로컬에 파일이 없을 경우 Docker가 이를 폴더(디렉토리)로 인식하고 생성하여 마운트하므로 실행 에러가 발생합니다.
 
 ---
 
@@ -121,7 +181,11 @@ environments:
 - `Esc` : 뒤로 가기
 - `q` / `Ctrl+C` : 애플리케이션 종료
 
-### 4. Client ID 포맷팅 및 연동 (Advanced)
+---
+
+## 고급 설정
+
+### Client ID 포맷팅 및 연동 (Advanced)
 
 AMQP나 STOMP 클라이언트를 직접 개발할 때, `amqcli`의 연결(Connection, `N`) 및 컨슈머 목록 화면에서 클라이언트의 **Uptime(실행 시간)**과 **PID(프로세스 ID)**가 예쁘게 노출되도록 연동할 수 있습니다.
 
@@ -140,63 +204,3 @@ AMQP나 STOMP 클라이언트를 직접 개발할 때, `amqcli`의 연결(Connec
 clientID := fmt.Sprintf("my-worker-%d-%d", os.Getpid(), time.Now().UnixMilli())
 ```
 위와 같은 형식으로 클라이언트 ID를 지정해주면 `amqcli` 환경에서 여러분이 만든 클라이언트 프로세스들의 상태를 훨씬 직관적으로 모니터링할 수 있습니다!
-
----
-
-## 설치 방법
-
-다음 방법 중 하나를 선택하여 `amqcli`를 설치할 수 있습니다.
-
-### 1. Homebrew (macOS / Linux)
-커스텀 탭을 통해 Homebrew로 매우 간단하게 설치 및 업그레이드할 수 있습니다:
-```bash
-brew tap xvlet/amqcli
-brew install amqcli
-```
-
-### 2. 간편 설치 스크립트 (Quick Install)
-운영체제에 맞는 설치 스크립트를 사용하여 최신 릴리즈를 가장 쉽게 설치하는 방법입니다.
-
-**macOS / Linux (Shell)**
-```bash
-curl -fsSL https://raw.githubusercontent.com/xvlet/amqcli/master/install.sh | sh
-```
-
-**Windows (PowerShell)**
-```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/xvlet/amqcli/master/install.ps1 | iex"
-```
-
-### 3. Go 명령어 사용 (go install)
-Go(1.25 이상)가 설치된 환경이라면 `go install` 명령어로 쉽게 설치할 수 있습니다:
-```bash
-go install github.com/xvlet/amqcli/cmd/amqcli@latest
-```
-
-### 4. 컴파일된 바이너리 다운로드
-Go가 설치되어 있지 않고 실행 파일만 바로 사용하고 싶다면, 최신 릴리즈에서 바이너리를 직접 다운로드하세요.
-- [Releases 페이지에서 바이너리 다운로드](https://github.com/xvlet/amqcli/releases)
-
-다운로드 후 압축을 풀고 실행 권한을 부여한 뒤 실행합니다:
-```bash
-tar -xzf amqcli_linux_amd64.tar.gz
-chmod +x amqcli
-./amqcli -h
-```
-
-### 5. Docker (GHCR)
-GitHub Container Registry(GHCR)를 통해 배포되는 공식 Docker 이미지를 이용해 바로 실행할 수 있습니다:
-```bash
-docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:latest
-```
-> **주의:** 이 명령어를 실행하기 **전**에 현재 디렉토리에 반드시 `config.yml` 파일이 존재해야 합니다. 로컬에 파일이 없을 경우 Docker가 이를 폴더(디렉토리)로 인식하고 생성하여 마운트하므로 실행 에러가 발생합니다.
-
----
-
-## 요구 사항
-
-`amqcli`는 단일 바이너리로 정적 컴파일(Statically compiled) 되므로, 실행 시 **외부 라이브러리 의존성을 요구하지 않습니다**.
-
-| 도구 | 목적 |
-|------|---------|
-| [Apache ActiveMQ](https://activemq.apache.org/) | 대상 메시지 브로커입니다. 내부적으로 Jolokia(REST API) 및 AMQP/STOMP 포트 접근이 허용되어야 정상 작동합니다. |
