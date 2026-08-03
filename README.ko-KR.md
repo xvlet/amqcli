@@ -44,7 +44,7 @@ flowchart LR
 
 ## 실행 화면
 
-<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="80%">
+<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="100%">
 
 ---
 
@@ -150,7 +150,7 @@ environments:
 ```
 
 > 💡 **환경 변수 치환 지원 (Environment Variable Substitution)**
-> `config.yml` 파일 내에서 `${ENV_VAR:-default_value}` 문법을 사용할 수 있습니다. 
+> `config.yml` 파일 내에서 `${ENV_VAR:-default_value}` 문법을 사용할 수 있습니다.
 > 예를 들어 `${MQ_HOST:-127.0.0.1}`은 시스템에 `MQ_HOST` 환경 변수가 설정되어 있으면 그 값을 사용하고, 없다면 기본값인 `127.0.0.1`을 사용한다는 의미입니다. 비밀번호나 주요 설정값을 하드코딩하지 않고 시스템 환경 변수로 안전하게 주입할 때 유용합니다.
 
 ### 2. amqcli 실행

@@ -44,7 +44,7 @@ flowchart LR
 
 ## Demo
 
-<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="80%">
+<img src="https://raw.githubusercontent.com/xvlet/amqcli/master/demo.gif" width="100%">
 
 ---
 
@@ -150,7 +150,7 @@ environments:
 ```
 
 > 💡 **Environment Variable Substitution**
-> You can use the `${ENV_VAR:-default_value}` syntax within `config.yml`. 
+> You can use the `${ENV_VAR:-default_value}` syntax within `config.yml`.
 > For example, `${MQ_HOST:-127.0.0.1}` tells the application to use the `MQ_HOST` environment variable if it's set in your system. If it is not set, it will fall back to the default value `127.0.0.1`. This is highly useful for securely injecting credentials or host names without hardcoding them in the file.
 
 ### 2. Run amqcli
