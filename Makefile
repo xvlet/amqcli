@@ -4,7 +4,7 @@ BINARY_NAME=amqcli
 BUILD_DIR=build
 STAGING_DIR=build_staging
 VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.1")
-LDFLAGS=-w -s -X amqcli/config.Version=$(VERSION)
+LDFLAGS=-w -s -X github.com/xvlet/amqcli/config.Version=$(VERSION)
 SRC_DIR=./cmd/main.go
 
 .PHONY: all build clean check release linux_amd64 linux_arm64 darwin_amd64 darwin_arm64 windows_amd64 windows_arm64

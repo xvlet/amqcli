@@ -89,8 +89,6 @@ type QueueRepository interface {
 	CreateQueue(name string) error
 	DeleteQueue(name string) error
 	PurgeQueue(name string) error
-	BrowseQueue(name string) ([]Message, error)
-	BrowseQueueWithPagination(name string, limit int, selector string) ([]Message, error)
 	RemoveMessage(queueName string, messageID string) error
 	MoveMessage(queueName string, messageID string, destQueue string) error
 	CopyMessage(queueName string, messageID string, destQueue string) error
