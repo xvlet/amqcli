@@ -58,6 +58,8 @@ flowchart LR
 <tr><td><b>Broker Statistics</b></td><td>Toggle in-depth system usage (CPU, Memory, Disk) and broker storage limits directly on the queue list.</td></tr>
 <tr><td><b>Advanced Deletion</b></td><td>Delete multiple messages at once or filter messages older than a specific time frame.</td></tr>
 <tr><td><b>Connection Info</b></td><td>Inspect active client connections, remote addresses, and uptime to monitor broker health.</td></tr>
+<tr><td><b>Diagnostic Snapshots</b></td><td>Export contextual, formatted diagnostic text dumps (Full Broker or Target Queue) instantly via the <code>o</code> hotkey for easy sharing and troubleshooting.</td></tr>
+<tr><td><b>Safety Controls</b></td><td>Define <code>readonly: true</code> per environment in <code>config.yml</code> or run with <code>--readonly</code> to disable destructive actions and prevent production incidents. Visual <code>[PROD]</code> badges automatically appear based on environment names.</td></tr>
 </table>
 
 ---
@@ -69,6 +71,16 @@ flowchart LR
 | Tool | Purpose |
 |------|---------|
 | [Apache ActiveMQ](https://activemq.apache.org/) | Target broker to manage. Ensure Jolokia / REST API and AMQP/STOMP ports are accessible. |
+
+### Compatibility Matrix
+
+| Broker Type | Versions | TUI Dashboard (Jolokia) | Messaging (AMQP/STOMP) | Notes |
+| :--- | :--- | :---: | :---: | :--- |
+| **ActiveMQ Classic** | 5.x ~ 6.x | 🟢 Fully Supported | 🟢 Fully Supported | The primary target broker for `amqcli`. |
+| **ActiveMQ Artemis** | 2.x ~ | ❌ Not Supported | 🟢 Supported | Artemis uses a completely different JMX MBean structure. While the TUI dashboard cannot render metrics, protocol-based message sending still functions. |
+
+> *Note: The Jolokia (JMX) metrics displayed in the TUI represent the broker's real-time runtime memory view, which may have slight discrepancies with the fully persisted KahaDB disk state.*
+
 
 ---
 
@@ -126,7 +138,7 @@ docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:la
 
 ### 1. Configuration (`config.yml`)
 
-`amqcli` uses a `config.yml` file to manage different environments (e.g., `dev`, `prod`). Place `config.yml` in the same directory as the executable.
+`amqcli` uses a `config.yml` file to manage different environments (e.g., `dev`, `prod`). Place `config.yml` in the same directory as the executable, or create `~/.amqcli.yml` as a global fallback. The tool also automatically checks standard paths like `/etc/amqcli/config.yml` and Homebrew directories.
 
 ```yaml
 # Example config.yml
@@ -140,6 +152,7 @@ environments:
     web_port: "8161"    # optional (default: 8161)
     username: "${MQ_USER:-admin}"
     password: "${MQ_PASS:-admin}"
+    readonly: false
   prod:
     protocol: "amqp"
     host: "10.0.0.5"
@@ -147,6 +160,7 @@ environments:
     web_port: "8161"    # optional (default: 8161)
     username: "admin"
     password: "prod-password"
+    readonly: true
 ```
 
 > 💡 **Environment Variable Substitution**
@@ -160,12 +174,21 @@ environments:
 ./amqcli
 
 # Specify a different environment from config.yml
-./amqcli -env prod
+./amqcli --env prod
+
+# Override the readonly setting explicitly (e.g., allow writes in prod)
+./amqcli --env prod --readonly=false
+
+# Use a custom configuration file path
+./amqcli --config /path/to/custom_config.yml
+
+# Show application version
+./amqcli --version
 ```
 
 ### 3. Keyboard Shortcuts
 
-- `↑` / `↓` : Navigate items.
+- `↑`/`↓`, `j`/`k`, `PgUp`/`PgDn`, `Home`/`End` : Navigate items and pages (Vim-style supported).
 - `Enter` : Select / Browse Queue / View Message Details.
 - `Space` : Multi-select messages in the message list.
 - `C` : Create Queue.
@@ -177,6 +200,7 @@ environments:
 - `I` : View Queue Info & Statistics.
 - `N` : View active Connections.
 - `U` : Toggle System Usage (Memory/Disk/CPU).
+- `O` : Export Diagnostic Snapshot (Full or Queue-Specific).
 - `F3` / `Ctrl+F` : Search messages.
 - `Esc` : Go Back.
 - `q` / `Ctrl+C` : Quit application.

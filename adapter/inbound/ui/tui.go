@@ -61,13 +61,16 @@ const (
 	stateQueueInfo
 	stateConnections
 	stateConfirmMultiDelete
+	stateConfirmPurge
 	stateTimeDeletePopup
 )
 
 type AppModel struct {
 	uc              *usecase.ActiveMQUseCase
+	env             string
 	refreshInterval time.Duration
 	viewStats       bool
+	readOnly        bool
 
 	queues          []domain.Queue
 	messages        []domain.Message
@@ -117,7 +120,7 @@ func (m *AppModel) initViewport() {
 
 type tickMsg time.Time
 
-func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host string) *AppModel {
+func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host string, env string, readOnly bool) *AppModel {
 	// Original profile detection for conditional styling
 	detectedProfile := lipgloss.ColorProfile()
 
@@ -199,7 +202,9 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host strin
 		uc:               uc,
 		refreshInterval:  interval,
 		host:             host,
+		env:              strings.ToUpper(env),
 		viewStats:        false,
+		readOnly:         readOnly,
 		lastUpdated:      time.Now(),
 		queueTable:       qTable,
 		msgTable:         mTable,
@@ -211,10 +216,7 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host strin
 }
 
 func (m *AppModel) Init() tea.Cmd {
-	initCmds := []tea.Cmd{m.tickRefresh(), m.fetchQueues(), m.fetchBrokerInfo()}
-	if m.viewStats {
-		initCmds = append(initCmds, m.fetchBrokerStats())
-	}
+	initCmds := []tea.Cmd{m.tickRefresh(), m.fetchQueues(), m.fetchBrokerInfo(), m.fetchBrokerStats(), m.fetchConnections()}
 	return tea.Batch(initCmds...)
 }
 

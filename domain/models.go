@@ -9,6 +9,9 @@ type Queue struct {
 	Consumers          int64 // Number Of Consumers
 	Enqueued           int64 // Messages Enqueued
 	Dequeued           int64 // Messages Dequeued
+	DispatchCount      int64 // Messages Dispatched
+	InFlightCount      int64 // Messages In-Flight
+	ExpiredCount       int64 // Messages Expired
 	MemoryPercentUsage int   // Queue Memory Usage Percentage
 	MemoryUsageBytes   int64 // Actual memory bytes used
 	MemoryLimit        int64 // Queue memory limit
@@ -50,17 +53,20 @@ type QueueDetail struct {
 
 // Consumer represents a client connected to a Queue
 type Consumer struct {
-	ConsumerID    string
-	ClientID      string
-	ConnectionID  string
-	RemoteAddress string
-	PID           string // Extracted from ClientID or ConnectionID
-	Uptime        string // Calculated from timestamp in ClientID
-	Enqueues      int64
-	Dequeues      int64
-	PrefetchSize  int
-	Exclusive     bool
-	Retroactive   bool
+	ConsumerID          string
+	ClientID            string
+	ConnectionID        string
+	DestinationName     string
+	RemoteAddress       string
+	PID                 string // Extracted from ClientID or ConnectionID
+	Uptime              string // Calculated from timestamp in ClientID
+	Enqueues            int64
+	Dequeues            int64
+	PrefetchSize        int
+	Exclusive           bool
+	Retroactive         bool
+	DispatchedQueueSize int64
+	PendingQueueSize    int64
 }
 
 // Connection represents a client connection to the broker
@@ -77,15 +83,38 @@ type BrokerStats struct {
 	TempPercentUsage   int
 	StoreLimit         int64
 	CPUUsage           float64
+	TotalEnqueueCount  int64
+	TotalDequeueCount  int64
+	TotalProducerCount int64
+	TotalConsumerCount int64
+	Uptime             string
+}
+
+type JVMStats struct {
+	HeapMemoryUsed    int64
+	HeapMemoryMax     int64
+	NonHeapMemoryUsed int64
+	ThreadCount       int
+	PeakThreadCount   int
+}
+
+type Topic struct {
+	Name          string
+	EnqueueCount  int64
+	DequeueCount  int64
+	ConsumerCount int64
 }
 
 // QueueRepository defines operations for managing Queues and their messages
 type QueueRepository interface {
 	GetBrokerStats() (BrokerStats, error)
 	GetBrokerInfo() (string, error)
+	GetJVMStats() (JVMStats, error)
 	GetQueues() ([]Queue, error)
+	GetTopics() ([]Topic, error)
 	GetQueueDetail(name string) (*QueueDetail, error)
 	GetConnections() ([]Connection, error)
+	GetAllConsumers() ([]Consumer, error)
 	CreateQueue(name string) error
 	DeleteQueue(name string) error
 	PurgeQueue(name string) error

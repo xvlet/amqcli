@@ -3,6 +3,7 @@
 # ==============================================================================
 refresh_interval: 1s
 encoding: utf-8
+
 environments:
   dev:
     protocol: "stomp"  # or "amqp"
@@ -11,6 +12,7 @@ environments:
     web_port: "8161"    # optional (default: 8161)
     username: "${MQ_USER:-admin}"
     password: "${MQ_PASS:-admin}"
+    readonly: false
   prod:
     protocol: "amqp"
     host: "10.0.0.5"
@@ -18,3 +20,4 @@ environments:
     web_port: "8161"    # optional (default: 8161)
     username: "admin"
     password: "prod-password"
+    readonly: true

@@ -16,6 +16,12 @@ import (
 )
 
 func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if _, ok := msg.(tea.KeyMsg); ok {
+		if m.err != nil && (strings.Contains(m.err.Error(), "read-only") || strings.Contains(m.err.Error(), "snapshot") || strings.Contains(m.err.Error(), "aborting") || strings.Contains(m.err.Error(), "queue name did not match")) {
+			m.err = nil
+		}
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -42,22 +48,29 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.err = msg
 		return m, m.tickRefresh() // Keep tick alive even after error so recovery is automatic
 	case tickMsg:
+		if m.err != nil && (strings.Contains(m.err.Error(), "read-only") || strings.Contains(m.err.Error(), "snapshot") || strings.Contains(m.err.Error(), "aborting") || strings.Contains(m.err.Error(), "queue name did not match")) {
+			m.err = nil
+		}
 		switch m.currentState {
 		case stateList:
-			cmds := []tea.Cmd{m.fetchQueues(), m.tickRefresh()}
-			if m.viewStats {
-				cmds = append(cmds, m.fetchBrokerStats())
-			}
+			cmds := []tea.Cmd{m.fetchQueues(), m.tickRefresh(), m.fetchBrokerStats(), m.fetchConnections()}
 			return m, tea.Batch(cmds...)
 		case stateMessageList:
-			return m, tea.Batch(m.fetchMessages(), m.tickRefresh())
+			return m, tea.Batch(m.fetchMessages(), m.tickRefresh(), m.fetchBrokerStats(), m.fetchConnections())
 		case stateQueueInfo:
-			return m, tea.Batch(m.fetchQueueDetail(m.selectedQueue), m.tickRefresh())
+			return m, tea.Batch(m.fetchQueueDetail(m.selectedQueue), m.tickRefresh(), m.fetchBrokerStats(), m.fetchConnections())
 		case stateConnections:
-			return m, tea.Batch(m.fetchConnections(), m.tickRefresh())
+			return m, tea.Batch(m.fetchConnections(), m.tickRefresh(), m.fetchBrokerStats())
 		default:
-			return m, m.tickRefresh()
+			return m, tea.Batch(m.tickRefresh(), m.fetchBrokerStats(), m.fetchConnections())
 		}
+	case snapshotSavedMsg:
+		if msg.err != nil {
+			m.err = fmt.Errorf("failed to save snapshot: %v", msg.err)
+		} else {
+			m.err = fmt.Errorf("snapshot saved to %s", msg.filename)
+		}
+		return m, nil
 	case brokerInfoMsg:
 		if string(msg) != "" {
 			m.brokerInfo = string(msg)
@@ -234,9 +247,9 @@ func (m *AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateMessageList(msg)
 	case stateMessageDetail:
 		return m.updateMessageDetail(msg)
-	case stateConfirmDelete, stateConfirmMultiDelete:
+	case stateConfirmMultiDelete:
 		return m.updateConfirmDelete(msg)
-	case stateCreateQueue, stateSendTo, stateMoveMessage:
+	case stateCreateQueue, stateSendTo, stateMoveMessage, stateConfirmDelete, stateConfirmPurge:
 		return m.updatePopup(msg)
 	case stateTimeDeletePopup:
 		return m.updateTimeDeletePopup(msg)
@@ -332,10 +345,18 @@ func (m *AppModel) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.fetchMessages()
 			}
 		case "c", "C", "alt+c":
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			m.currentState = stateCreateQueue
 			m.popupForm = NewFormModel("Create Queue", []string{"Queue Name"})
 			return m, m.popupForm.Init()
 		case "s", "S", "alt+s":
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			if row := m.queueTable.SelectedRow(); row != nil {
 				m.selectedQueue = row[0]
 				m.currentState = stateSendTo
@@ -343,22 +364,26 @@ func (m *AppModel) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.popupForm.Init()
 			}
 		case "p", "P", "alt+p":
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			if row := m.queueTable.SelectedRow(); row != nil {
-				qName := row[0]
-				return m, func() tea.Msg {
-					err := m.uc.PurgeQueue(qName)
-					if err != nil {
-						return err
-					}
-					return m.fetchQueues()()
-				}
+				m.selectedQueue = row[0]
+				m.currentState = stateConfirmPurge
+				m.popupForm = NewFormModel(fmt.Sprintf("Purge Queue: %s\nType queue name to confirm", m.selectedQueue), []string{"Queue Name"})
+				return m, m.popupForm.Init()
 			}
 		case "d", "D", "alt+d":
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			if row := m.queueTable.SelectedRow(); row != nil {
 				m.confirmTarget = row[0]
-				m.confirmFocus = 1 // Default to Cancel for safety
-				m.currentState = stateConfirmDelete
-				return m, nil
+				m.currentState = stateConfirmDelete // We can redefine stateConfirmDelete to use form
+				m.popupForm = NewFormModel(fmt.Sprintf("Delete Queue: %s\nType queue name to confirm", m.confirmTarget), []string{"Queue Name"})
+				return m, m.popupForm.Init()
 			}
 		case "i", "I":
 			if row := m.queueTable.SelectedRow(); row != nil {
@@ -376,6 +401,9 @@ func (m *AppModel) updateList(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, tea.Batch(m.fetchBrokerStats(), m.fetchQueues())
 			}
 			return m, m.fetchQueues()
+		case "o", "O":
+			m.err = fmt.Errorf("generating full diagnostic snapshot")
+			return m, m.takeFullSnapshot()
 		case "n", "N":
 			m.currentState = stateConnections
 			m.connections = nil
@@ -436,6 +464,10 @@ func (m *AppModel) updateMessageList(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "d":
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			selectedCount := 0
 			for _, sel := range m.selectedMessages {
 				if sel {
@@ -462,19 +494,23 @@ func (m *AppModel) updateMessageList(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "p", "P", "alt+p":
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			m.timeDeleteVal = "3"
 			m.timeDeleteUnit = "d"
 			m.timeDeleteFocus = 0
 			m.currentState = stateTimeDeletePopup
 			return m, nil
 		case "D", "alt+d":
-			return m, func() tea.Msg {
-				err := m.uc.PurgeQueue(m.selectedQueue)
-				if err != nil {
-					return err
-				}
-				return m.fetchMessages()()
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
 			}
+			m.currentState = stateConfirmPurge
+			m.popupForm = NewFormModel(fmt.Sprintf("Purge Queue: %s\nType queue name to confirm", m.selectedQueue), []string{"Queue Name"})
+			return m, m.popupForm.Init()
 		}
 	}
 
@@ -516,6 +552,10 @@ func (m *AppModel) updateMessageDetail(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.selectedMessage = nil
 			return m, nil
 		case "d", "D", "alt+d": // Delete
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			if m.selectedMessage != nil {
 				return m, func() tea.Msg {
 					err := m.uc.DeleteMessage(m.selectedQueue, m.selectedMessage.MessageID)
@@ -528,6 +568,10 @@ func (m *AppModel) updateMessageDetail(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "r", "R", "alt+r": // Retry (Usually valid if it's DLQ)
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			if m.selectedMessage != nil {
 				return m, func() tea.Msg {
 					err := m.uc.RetryMessage(m.selectedQueue, m.selectedMessage.MessageID)
@@ -540,6 +584,10 @@ func (m *AppModel) updateMessageDetail(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		case "m", "M", "alt+m": // Move
+			if m.readOnly {
+				m.err = fmt.Errorf("read-only mode is active")
+				return m, nil
+			}
 			if m.selectedMessage != nil {
 				m.currentState = stateMoveMessage
 				m.popupForm = NewFormModel("Move Message", []string{"Destination Queue Name"})
@@ -606,6 +654,50 @@ func (m *AppModel) updatePopup(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.currentState = stateMessageList // skip detail since it's moved
 			return m, actionCmd
+		} else if m.currentState == stateConfirmDelete && len(vals) > 0 {
+			if vals[0] != m.confirmTarget {
+				m.err = fmt.Errorf("queue name did not match, aborting delete")
+				m.currentState = stateList
+				return m, nil
+			}
+			qName := m.confirmTarget
+			m.confirmTarget = ""
+			actionCmd = func() tea.Msg {
+				err := m.uc.DeleteQueue(qName)
+				if err != nil {
+					return err
+				}
+				return m.fetchQueues()()
+			}
+			m.currentState = stateList
+			return m, actionCmd
+		} else if m.currentState == stateConfirmPurge && len(vals) > 0 {
+			if vals[0] != m.selectedQueue {
+				m.err = fmt.Errorf("queue name did not match, aborting purge")
+				if prevState == stateList {
+					m.currentState = stateList
+				} else {
+					m.currentState = stateMessageList
+				}
+				return m, nil
+			}
+			qName := m.selectedQueue
+			actionCmd = func() tea.Msg {
+				err := m.uc.PurgeQueue(qName)
+				if err != nil {
+					return err
+				}
+				if prevState == stateList {
+					return m.fetchQueues()()
+				}
+				return m.fetchMessages()()
+			}
+			if prevState == stateList {
+				m.currentState = stateList
+			} else {
+				m.currentState = stateMessageList
+			}
+			return m, actionCmd
 		}
 
 		m.currentState = prevState
@@ -648,6 +740,9 @@ func (m *AppModel) updateQueueInfo(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentState = stateList
 			m.selectedQueueDetail = nil
 			return m, nil
+		case "o", "O":
+			m.err = fmt.Errorf("generating queue diagnostic snapshot")
+			return m, m.takeQueueSnapshot()
 		}
 	}
 	var cmd tea.Cmd

@@ -58,6 +58,8 @@ flowchart LR
 <tr><td><b>브로커 통계</b></td><td>큐 리스트 화면에서 단축키(U)로 시스템 리소스(CPU, 메모리, 디스크) 사용량 및 스토어 크기 등의 상태를 토글하여 확인할 수 있습니다.</td></tr>
 <tr><td><b>고급 삭제 기능</b></td><td>한 번에 여러 개의 메시지를 일괄 삭제하거나, 특정 시간 이전에 생성된 메시지를 필터링하여 일괄 삭제할 수 있습니다.</td></tr>
 <tr><td><b>연결(Connection) 정보</b></td><td>활성화된 클라이언트 연결 정보, 리모트 주소, 유지 시간(Uptime) 등을 조회하여 브로커의 상태를 점검할 수 있습니다.</td></tr>
+<tr><td><b>진단 스냅샷(Snapshot) 추출</b></td><td><code>o</code> 단축키를 통해 현재 컨텍스트에 맞춰 전체 브로커 덤프 또는 특정 큐의 심층 텍스트 리포트를 즉시 추출하여 장애 공유 및 티켓 발행에 활용할 수 있습니다.</td></tr>
+<tr><td><b>운영 환경 안전 제어 (Read-Only)</b></td><td><code>config.yml</code>의 환경별로 <code>readonly: true</code>를 설정하거나 CLI 실행 시 <code>--readonly</code>를 부여해 치명적인 삭제/수정 작업을 원천 차단합니다. 또한 환경 이름에 맞게 시각적인 <code>[PROD]</code> 뱃지와 경고 색상이 UI에 자동 표출됩니다.</td></tr>
 </table>
 
 ---
@@ -69,6 +71,16 @@ flowchart LR
 | 도구 | 목적 |
 |------|---------|
 | [Apache ActiveMQ](https://activemq.apache.org/) | 대상 메시지 브로커입니다. 내부적으로 Jolokia(REST API) 및 AMQP/STOMP 포트 접근이 허용되어야 정상 작동합니다. |
+
+### 호환성 매트릭스 (Compatibility Matrix)
+
+| Broker Type | 버전 | TUI 대시보드 (Jolokia) | 메시지 송수신 (AMQP/STOMP) | 비고 |
+| :--- | :--- | :---: | :---: | :--- |
+| **ActiveMQ Classic** | 5.x ~ 6.x | 🟢 완벽 지원 | 🟢 완벽 지원 | `amqcli`의 주 타겟 브로커입니다. |
+| **ActiveMQ Artemis** | 2.x ~ | ❌ 미지원 | 🟢 지원 | Artemis는 JMX MBean 구조가 완전히 달라 대시보드는 렌더링되지 않으나, 프로토콜 기반 송수신은 가능합니다. |
+
+> *참고: `amqcli`의 TUI 대시보드가 보여주는 Jolokia(JMX) 메트릭은 브로커 메모리 상의 실시간 뷰(Runtime View)입니다. KahaDB 등 디스크에 저장된 영속성(Persistence) 데이터 전체와 미세한 시차가 발생할 수 있습니다.*
+
 
 ---
 
@@ -126,7 +138,7 @@ docker run -it --rm -v $(pwd)/config.yml:/app/config.yml ghcr.io/xvlet/amqcli:la
 
 ### 1. 설정 파일 (`config.yml`) 구성
 
-`amqcli`는 환경(예: `dev`, `prod`) 단위로 브로커를 관리하기 위해 `config.yml` 설정 파일을 사용합니다. 실행 파일과 동일한 경로에 파일을 생성하세요.
+`amqcli`는 환경(예: `dev`, `prod`) 단위로 브로커를 관리하기 위해 `config.yml` 설정 파일을 사용합니다. 실행 파일과 동일한 경로에 파일을 생성하거나, 전역으로 사용할 수 있도록 사용자 홈 디렉토리에 `~/.amqcli.yml`을 생성할 수 있습니다. (추가로 `/etc/amqcli/config.yml` 등 시스템 표준 경로도 자동 탐색합니다.)
 
 ```yaml
 # config.yml 예시
@@ -140,6 +152,7 @@ environments:
     web_port: "8161"    # 선택 사항 (기본값: 8161)
     username: "${MQ_USER:-admin}"
     password: "${MQ_PASS:-admin}"
+    readonly: false
   prod:
     protocol: "amqp"
     host: "10.0.0.5"
@@ -147,25 +160,35 @@ environments:
     web_port: "8161"    # 선택 사항 (기본값: 8161)
     username: "admin"
     password: "prod-password"
+    readonly: true
 ```
 
 > 💡 **환경 변수 치환 지원 (Environment Variable Substitution)**
 > `config.yml` 파일 내에서 `${ENV_VAR:-default_value}` 문법을 사용할 수 있습니다.
 > 예를 들어 `${MQ_HOST:-127.0.0.1}`은 시스템에 `MQ_HOST` 환경 변수가 설정되어 있으면 그 값을 사용하고, 없다면 기본값인 `127.0.0.1`을 사용한다는 의미입니다. 비밀번호나 주요 설정값을 하드코딩하지 않고 시스템 환경 변수로 안전하게 주입할 때 유용합니다.
 
-### 2. amqcli 실행
+### 2. amqcli 실행 및 플래그 옵션
 
 ```bash
 # 기본 환경설정('dev')으로 실행할 경우
 ./amqcli
 
 # config.yml 내에 정의된 특정 환경('prod')으로 실행할 경우
-./amqcli -env prod
+./amqcli --env prod
+
+# 읽기 전용 설정을 명시적으로 무시하고 쓰기 권한 활성화 (예: 운영 긴급 조치)
+./amqcli --env prod --readonly=false
+
+# 특정 경로의 설정 파일을 명시하여 실행할 경우
+./amqcli --config /path/to/custom_config.yml
+
+# 버전 확인
+./amqcli --version
 ```
 
 ### 3. 주요 단축키
 
-- `↑` / `↓` : 상하 항목 이동
+- `↑`/`↓`, `j`/`k`, `PgUp`/`PgDn`, `Home`/`End` : 리스트 상하 이동 및 페이징 (Vim 스타일 키바인딩 지원)
 - `Enter` : 항목 선택 / 큐 내부 메시지 조회 / 메시지 상세 보기
 - `Space` : 메시지 리스트에서 다중 선택 (Multi-select)
 - `C` : 새 큐 생성 (Create)
@@ -177,6 +200,7 @@ environments:
 - `I` : 큐 통계 및 상세 정보 확인 (Info)
 - `N` : 활성 연결(Connection) 목록 조회
 - `U` : 시스템 Usage 통계(Memory/Disk/CPU 등) 토글 표시
+- `O` : 진단 스냅샷 덤프 추출 (전체 화면 또는 큐 상세 화면 맞춤형)
 - `F3` / `Ctrl+F` : 메시지 검색 (Search)
 - `Esc` : 뒤로 가기
 - `q` / `Ctrl+C` : 애플리케이션 종료

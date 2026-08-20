@@ -45,11 +45,19 @@ func (m *AppModel) View() string {
 		}
 	}
 
-	var connPart string
-	if m.err != nil {
-		connPart = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("%s Disconnected", m.host))
+	envStyle := lipgloss.NewStyle().Bold(true)
+	if strings.Contains(strings.ToLower(m.env), "prod") {
+		envStyle = envStyle.Foreground(lipgloss.Color("#ed8796")) // Red for PROD
 	} else {
-		connPart = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#a6da95")).Render(fmt.Sprintf("%s Connected%s", m.host, brokerInfoStr))
+		envStyle = envStyle.Foreground(lipgloss.Color("#a6da95")) // Green for DEV/others
+	}
+	envStr := envStyle.Render(fmt.Sprintf("[%s] ", m.env))
+
+	var connPart string
+	if m.err != nil && !strings.Contains(m.err.Error(), "read-only") && !strings.Contains(m.err.Error(), "snapshot saved") {
+		connPart = envStr + lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("%s Disconnected", m.host))
+	} else {
+		connPart = envStr + lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#a6da95")).Render(fmt.Sprintf("%s Connected%s", m.host, brokerInfoStr))
 	}
 
 	colors := []string{"#a6da95", "#9cdec4", "#91e1d3", "#87e5e2", "#8bd5ca", "#81c8be"}
@@ -116,14 +124,21 @@ func (m *AppModel) View() string {
 
 	footerOk := lipgloss.NewStyle().MarginLeft(2).Render(lipgloss.JoinHorizontal(lipgloss.Top, leftBlock, lipgloss.NewStyle().Width(spaceW).Render(""), rightBottomBlock))
 
-	if m.currentState == stateList {
-		var subHeader string
-		if m.err != nil {
-			subHeader = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("Error: %v", m.err))
+	if m.err != nil {
+		var notice string
+		if strings.Contains(m.err.Error(), "snapshot") {
+			// Capitalize snapshot to Snapshot
+			msg := strings.Replace(m.err.Error(), "snapshot", "Snapshot", 1)
+			notice = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#a6da95")).Render(fmt.Sprintf("✔ %v", msg))
 		} else {
-			subHeader = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#a5adcb")).Render(fmt.Sprintf("Command: [%s]reate%s[%s]end to%s[%s]urge%s[%s]elete%s<%s> Browse%s<%s>nfo%sCo<%s>nections%s<%s>sage",
-				y("C"), dimPipe, y("S"), dimPipe, y("P"), dimPipe, y("D"), dimPipe, y("Enter"), dimPipe, y("I"), dimPipe, y("n"), dimPipe, y("U")))
+			notice = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("⚠ %v", m.err))
 		}
+		footerOk = lipgloss.JoinVertical(lipgloss.Left, footerOk, notice)
+	}
+
+	if m.currentState == stateList {
+		subHeader := lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#a5adcb")).Render(fmt.Sprintf("Command: [%s]reate%s[%s]end to%s[%s]urge%s[%s]elete%s<%s> Browse%s<%s>nfo%sCo<%s>nections%s<%s>sage%s<%s> Snapshot(Full)",
+			y("C"), dimPipe, y("S"), dimPipe, y("P"), dimPipe, y("D"), dimPipe, y("Enter"), dimPipe, y("I"), dimPipe, y("n"), dimPipe, y("U"), dimPipe, y("o")))
 
 		// Use global contentW dimension
 		tableBox := lipgloss.NewStyle().MarginLeft(2).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Padding(0, 1).Width(contentW).Render(m.queueTable.View())
@@ -132,23 +147,18 @@ func (m *AppModel) View() string {
 	}
 
 	if m.currentState == stateMessageList {
-		var sub string
-		if m.err != nil {
-			sub = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("Error: %v", m.err))
-		} else {
-			pending := int64(0)
-			for _, q := range m.queues {
-				if q.Name == m.selectedQueue {
-					pending = q.Pending
-					break
-				}
+		pending := int64(0)
+		for _, q := range m.queues {
+			if q.Name == m.selectedQueue {
+				pending = q.Pending
+				break
 			}
-			searchHint := fmt.Sprintf("[%s] Search", y("F3|Ctrl+F"))
-			if m.isFiltered && m.filterKeyword != "" {
-				searchHint += lipgloss.NewStyle().Foreground(lipgloss.Color("#cad3f5")).Render(fmt.Sprintf(" (%s)", m.filterKeyword))
-			}
-			sub = lipgloss.NewStyle().MarginLeft(2).Render(fmt.Sprintf("Browsing: %s (%d/%d) | Command: <%s> Back | <%s> Detail | <%s> Select | %s | [%s] Delete | [%s] Delete By Time", m.selectedQueue, len(m.messages), pending, y("Esc"), y("Enter"), y("Space"), searchHint, y("d"), y("p")))
 		}
+		searchHint := fmt.Sprintf("[%s] Search", y("F3|Ctrl+F"))
+		if m.isFiltered && m.filterKeyword != "" {
+			searchHint += lipgloss.NewStyle().Foreground(lipgloss.Color("#cad3f5")).Render(fmt.Sprintf(" (%s)", m.filterKeyword))
+		}
+		sub := lipgloss.NewStyle().MarginLeft(2).Render(fmt.Sprintf("Browsing: %s (%d/%d) | Command: <%s> Back | <%s> Detail | <%s> Select | %s | [%s] Delete | [%s] Delete By Time", m.selectedQueue, len(m.messages), pending, y("Esc"), y("Enter"), y("Space"), searchHint, y("d"), y("p")))
 
 		// Use global contentW dimension
 		tableBox := lipgloss.NewStyle().MarginLeft(2).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Padding(0, 1).Width(contentW).Render(m.msgTable.View())
@@ -157,12 +167,7 @@ func (m *AppModel) View() string {
 	}
 
 	if m.currentState == stateMessageDetail && m.selectedMessage != nil {
-		var sub string
-		if m.err != nil {
-			sub = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("Error: %v", m.err))
-		} else {
-			sub = lipgloss.NewStyle().MarginLeft(2).Render(fmt.Sprintf("Browsing: %s | Command: <%s> Back | [%s]elete | [%s]etry | [%s]ove", m.selectedQueue, y("Esc"), y("D"), y("R"), y("M")))
-		}
+		sub := lipgloss.NewStyle().MarginLeft(2).Render(fmt.Sprintf("Browsing: %s | Command: <%s> Back | [%s]elete | [%s]etry | [%s]ove", m.selectedQueue, y("Esc"), y("D"), y("R"), y("M")))
 
 		// Fixed-width bracketed label for uniform alignment, rendered in gray
 		// ' Correlation ID ' = 16 runes → const w = 16 so all labels align
@@ -211,12 +216,7 @@ func (m *AppModel) View() string {
 	}
 
 	if m.currentState == stateQueueInfo {
-		var sub string
-		if m.err != nil {
-			sub = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("Error: %v", m.err))
-		} else {
-			sub = lipgloss.NewStyle().MarginLeft(2).Render(fmt.Sprintf("Queue Info: %s | Command: <%s> Back", m.selectedQueue, y("Esc")))
-		}
+		sub := lipgloss.NewStyle().MarginLeft(2).Render(fmt.Sprintf("Queue Info: %s | Command: <%s> Back | <%s> Snapshot(Queue)", m.selectedQueue, y("Esc"), y("o")))
 
 		if m.selectedQueueDetail == nil {
 			var b strings.Builder
@@ -277,12 +277,7 @@ func (m *AppModel) View() string {
 	}
 
 	if m.currentState == stateConnections {
-		var sub string
-		if m.err != nil {
-			sub = lipgloss.NewStyle().MarginLeft(2).Foreground(lipgloss.Color("#ed8796")).Render(fmt.Sprintf("Error: %v", m.err))
-		} else {
-			sub = lipgloss.NewStyle().MarginLeft(2).Render(fmt.Sprintf("Connections : %d (total) | Command: <%s> Back", len(m.connections), y("Esc")))
-		}
+		sub := lipgloss.NewStyle().MarginLeft(2).Render(fmt.Sprintf("Connections: %d | Command: <%s> Back", len(m.connections), y("Esc")))
 
 		tableBox := lipgloss.NewStyle().MarginLeft(2).Border(appBorder).BorderForeground(lipgloss.Color("#5b6078")).Padding(0, 1).Width(contentW).Render(m.connectionsTable.View())
 

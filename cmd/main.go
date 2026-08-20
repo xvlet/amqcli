@@ -22,6 +22,7 @@ func main() {
 	env := flag.String("env", "dev", "Environment profile to use (e.g. dev, prod)")
 	showVersion := flag.Bool("version", false, "Print application version")
 	configPath := flag.String("config", "config.yml", "Path to configuration file")
+	readOnly := flag.Bool("readonly", false, "Enable read-only mode to prevent destructive operations")
 	flag.Parse()
 
 	if *showVersion {
@@ -53,11 +54,19 @@ func main() {
 	// 3. Initialize UseCases
 	uc := usecase.NewActiveMQUseCase(jolokiaClient, msgRepo, cfg.Encoding)
 
-	// 4. Initialize TUI
-	model := ui.NewAppModel(uc, cfg.RefreshInterval, mqConfig.StompURL)
+	// 4. Determine ReadOnly state (Flag overrides config)
+	isReadOnly := mqConfig.ReadOnly
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "readonly" {
+			isReadOnly = *readOnly
+		}
+	})
+
+	// 5. Initialize TUI
+	model := ui.NewAppModel(uc, cfg.RefreshInterval, mqConfig.StompURL, *env, isReadOnly)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
-	// 5. Run application
+	// 6. Run application
 	if _, err := p.Run(); err != nil {
 		log.Fatalf("Application error: %v", err)
 	}
