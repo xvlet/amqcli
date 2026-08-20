@@ -81,6 +81,7 @@ func (j *JolokiaClient) doRequest(reqData JolokiaRequest) ([]byte, error) {
 		req.SetBasicAuth(j.username, j.password)
 	}
 
+	// #nosec G704 -- internal http client
 	resp, err := j.client.Do(req) // #nosec G704 -- URL sourced from config file, not user input
 	if err != nil {
 		return nil, err
@@ -127,17 +128,22 @@ func (j *JolokiaClient) GetBrokerStats() (domain.BrokerStats, error) {
 	reqData := JolokiaRequest{
 		Type:      "read",
 		Mbean:     "org.apache.activemq:type=Broker,brokerName=*",
-		Attribute: "MemoryPercentUsage,StorePercentUsage,StoreLimit,TempPercentUsage",
+		Attribute: "MemoryPercentUsage,StorePercentUsage,StoreLimit,TempPercentUsage,TotalEnqueueCount,TotalDequeueCount,TotalProducerCount,TotalConsumerCount,Uptime",
 	}
 
 	respBytes, err := j.doRequest(reqData)
 	if err == nil {
 		var result struct {
 			Value map[string]struct {
-				MemoryPercentUsage int   `json:"MemoryPercentUsage"`
-				StorePercentUsage  int   `json:"StorePercentUsage"`
-				TempPercentUsage   int   `json:"TempPercentUsage"`
-				StoreLimit         int64 `json:"StoreLimit"`
+				MemoryPercentUsage int    `json:"MemoryPercentUsage"`
+				StorePercentUsage  int    `json:"StorePercentUsage"`
+				TempPercentUsage   int    `json:"TempPercentUsage"`
+				StoreLimit         int64  `json:"StoreLimit"`
+				TotalEnqueueCount  int64  `json:"TotalEnqueueCount"`
+				TotalDequeueCount  int64  `json:"TotalDequeueCount"`
+				TotalProducerCount int64  `json:"TotalProducerCount"`
+				TotalConsumerCount int64  `json:"TotalConsumerCount"`
+				Uptime             string `json:"Uptime"`
 			} `json:"value"`
 		}
 		if err := json.Unmarshal(respBytes, &result); err == nil {
@@ -146,7 +152,12 @@ func (j *JolokiaClient) GetBrokerStats() (domain.BrokerStats, error) {
 				stats.StorePercentUsage = v.StorePercentUsage
 				stats.TempPercentUsage = v.TempPercentUsage
 				stats.StoreLimit = v.StoreLimit
-				break
+				stats.TotalEnqueueCount = v.TotalEnqueueCount
+				stats.TotalDequeueCount = v.TotalDequeueCount
+				stats.TotalProducerCount = v.TotalProducerCount
+				stats.TotalConsumerCount = v.TotalConsumerCount
+				stats.Uptime = v.Uptime
+				break // only one broker usually
 			}
 		}
 	}
@@ -172,6 +183,85 @@ func (j *JolokiaClient) GetBrokerStats() (domain.BrokerStats, error) {
 			}
 			if cpu > 0 {
 				stats.CPUUsage = cpu * 100.0 // Convert to percentage
+			}
+		}
+	}
+
+	return stats, nil
+}
+
+func (j *JolokiaClient) GetJVMStats() (domain.JVMStats, error) {
+	var stats domain.JVMStats
+
+	// Batch request for Memory and Threading
+	batchReq := []JolokiaRequest{
+		{
+			Type:  "read",
+			Mbean: "java.lang:type=Memory",
+		},
+		{
+			Type:  "read",
+			Mbean: "java.lang:type=Threading",
+		},
+	}
+
+	b, _ := json.Marshal(batchReq)
+	req, _ := http.NewRequest(http.MethodPost, j.url, bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	if parts := strings.Split(j.url, "/api/jolokia"); len(parts) > 0 {
+		req.Header.Set("Origin", parts[0])
+	}
+	req.SetBasicAuth(j.username, j.password)
+
+	// #nosec G704 -- internal http client
+	resp, err := j.client.Do(req)
+	if err != nil {
+		return stats, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return stats, fmt.Errorf("unexpected status: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return stats, err
+	}
+
+	var results []struct {
+		Request struct {
+			Mbean string `json:"mbean"`
+		} `json:"request"`
+		Value map[string]interface{} `json:"value"`
+	}
+
+	if err := json.Unmarshal(body, &results); err != nil {
+		return stats, err
+	}
+
+	for _, r := range results {
+		switch r.Request.Mbean {
+		case "java.lang:type=Memory":
+			if heap, ok := r.Value["HeapMemoryUsage"].(map[string]interface{}); ok {
+				if used, ok := heap["used"].(float64); ok {
+					stats.HeapMemoryUsed = int64(used)
+				}
+				if max, ok := heap["max"].(float64); ok {
+					stats.HeapMemoryMax = int64(max)
+				}
+			}
+			if nonHeap, ok := r.Value["NonHeapMemoryUsage"].(map[string]interface{}); ok {
+				if used, ok := nonHeap["used"].(float64); ok {
+					stats.NonHeapMemoryUsed = int64(used)
+				}
+			}
+		case "java.lang:type=Threading":
+			if count, ok := r.Value["ThreadCount"].(float64); ok {
+				stats.ThreadCount = int(count)
+			}
+			if peak, ok := r.Value["PeakThreadCount"].(float64); ok {
+				stats.PeakThreadCount = int(peak)
 			}
 		}
 	}
@@ -321,6 +411,9 @@ func (j *JolokiaClient) GetQueues() ([]domain.Queue, error) {
 			ConsumerCount        int64  `json:"ConsumerCount"`
 			EnqueueCount         int64  `json:"EnqueueCount"`
 			DequeueCount         int64  `json:"DequeueCount"`
+			DispatchCount        int64  `json:"DispatchCount"`
+			InFlightCount        int64  `json:"InFlightCount"`
+			ExpiredCount         int64  `json:"ExpiredCount"`
 			MemoryPercentUsage   int    `json:"MemoryPercentUsage"`
 			MemoryUsageByteCount int64  `json:"MemoryUsageByteCount"`
 			MemoryLimit          int64  `json:"MemoryLimit"`
@@ -365,6 +458,9 @@ func (j *JolokiaClient) GetQueues() ([]domain.Queue, error) {
 				Consumers:          v.ConsumerCount,
 				Enqueued:           v.EnqueueCount,
 				Dequeued:           v.DequeueCount,
+				DispatchCount:      v.DispatchCount,
+				InFlightCount:      v.InFlightCount,
+				ExpiredCount:       v.ExpiredCount,
 				MemoryPercentUsage: v.MemoryPercentUsage,
 				MemoryUsageBytes:   v.MemoryUsageByteCount,
 				MemoryLimit:        v.MemoryLimit,
@@ -384,6 +480,186 @@ func (j *JolokiaClient) GetQueues() ([]domain.Queue, error) {
 	})
 
 	return queues, nil
+}
+
+func (j *JolokiaClient) GetTopics() ([]domain.Topic, error) {
+	reqData := JolokiaRequest{
+		Type:  "read",
+		Mbean: "org.apache.activemq:type=Broker,brokerName=*,destinationType=Topic,destinationName=*",
+	}
+
+	respBytes, err := j.doRequest(reqData)
+	if err != nil {
+		if strings.Contains(err.Error(), "status 404") && strings.Contains(err.Error(), "No MBean") {
+			return []domain.Topic{}, nil
+		}
+		return nil, err
+	}
+
+	var result struct {
+		Value map[string]struct {
+			EnqueueCount  int64  `json:"EnqueueCount"`
+			DequeueCount  int64  `json:"DequeueCount"`
+			ConsumerCount int64  `json:"ConsumerCount"`
+			Name          string `json:"Name"`
+		} `json:"value"`
+	}
+
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		return nil, err
+	}
+
+	var topics []domain.Topic
+	for k, v := range result.Value {
+		name := v.Name
+		if name == "" {
+			parts := strings.Split(k, ",")
+			for _, p := range parts {
+				if strings.HasPrefix(p, "destinationName=") {
+					name = strings.TrimPrefix(p, "destinationName=")
+					break
+				}
+			}
+		}
+
+		if name != "" {
+			topics = append(topics, domain.Topic{
+				Name:          name,
+				EnqueueCount:  v.EnqueueCount,
+				DequeueCount:  v.DequeueCount,
+				ConsumerCount: v.ConsumerCount,
+			})
+		}
+	}
+
+	// sort by name
+	sort.Slice(topics, func(i, k int) bool {
+		return topics[i].Name < topics[k].Name
+	})
+
+	return topics, nil
+}
+
+func (j *JolokiaClient) GetAllConsumers() ([]domain.Consumer, error) {
+	reqData := JolokiaRequest{
+		Type:  "read",
+		Mbean: "org.apache.activemq:type=Broker,brokerName=*,destinationType=Queue,destinationName=*,endpoint=Consumer,clientId=*,consumerId=*",
+	}
+
+	respBytes, err := j.doRequest(reqData)
+	if err != nil {
+		if strings.Contains(err.Error(), "status 404") {
+			return []domain.Consumer{}, nil
+		}
+		return nil, err
+	}
+
+	var result struct {
+		Value map[string]map[string]interface{} `json:"value"`
+	}
+
+	if err := json.Unmarshal(respBytes, &result); err != nil {
+		return nil, err
+	}
+
+	var consumers []domain.Consumer
+	var batchReqs []JolokiaRequest
+
+	for id, props := range result.Value {
+		c := domain.Consumer{
+			ConsumerID: id,
+		}
+		if v, ok := props["ClientId"].(string); ok {
+			c.ClientID = v
+		}
+		if v, ok := props["ConnectionId"].(string); ok {
+			c.ConnectionID = v
+		}
+
+		parts := strings.Split(id, ",")
+		for _, p := range parts {
+			if strings.HasPrefix(p, "destinationName=") {
+				c.DestinationName = strings.TrimPrefix(p, "destinationName=")
+				break
+			}
+		}
+
+		if conn, ok := props["Connection"].(map[string]interface{}); ok {
+			if objName, ok := conn["objectName"].(string); ok {
+				batchReqs = append(batchReqs, JolokiaRequest{
+					Type:      "read",
+					Mbean:     objName,
+					Attribute: "RemoteAddress",
+				})
+			}
+		}
+
+		if v, ok := props["EnqueueCounter"].(float64); ok {
+			c.Enqueues = int64(v)
+		}
+		if v, ok := props["DequeueCounter"].(float64); ok {
+			c.Dequeues = int64(v)
+		}
+		if v, ok := props["PrefetchSize"].(float64); ok {
+			c.PrefetchSize = int(v)
+		}
+		if v, ok := props["DispatchedQueueSize"].(float64); ok {
+			c.DispatchedQueueSize = int64(v)
+		}
+		if v, ok := props["PendingQueueSize"].(float64); ok {
+			c.PendingQueueSize = int64(v)
+		}
+
+		consumers = append(consumers, c)
+	}
+
+	// Fetch RemoteAddresses
+	if len(batchReqs) > 0 {
+		b, _ := json.Marshal(batchReqs)
+		req, _ := http.NewRequest(http.MethodPost, j.url, bytes.NewReader(b))
+		req.Header.Set("Content-Type", "application/json")
+		req.SetBasicAuth(j.username, j.password)
+		if // #nosec G704 -- internal http client
+		resp, err := j.client.Do(req); err == nil {
+			defer func() { _ = resp.Body.Close() }()
+			if body, err := io.ReadAll(resp.Body); err == nil {
+				var batchResults []struct {
+					Request struct {
+						Mbean string `json:"mbean"`
+					} `json:"request"`
+					Value string `json:"value"`
+				}
+				if err := json.Unmarshal(body, &batchResults); err == nil {
+					remoteAddrMap := make(map[string]string)
+					for _, res := range batchResults {
+						remoteAddrMap[res.Request.Mbean] = res.Value
+					}
+					for i, c := range consumers {
+						for _, props := range result.Value {
+							if props["ClientId"] == c.ClientID && props["ConnectionId"] == c.ConnectionID {
+								if conn, ok := props["Connection"].(map[string]interface{}); ok {
+									if objName, ok := conn["objectName"].(string); ok {
+										if addr, exists := remoteAddrMap[objName]; exists {
+											consumers[i].RemoteAddress = addr
+										}
+									}
+								}
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for i := range consumers {
+		pid, uptime := j.parseConsumerInfo(consumers[i].ClientID, consumers[i].ConnectionID)
+		consumers[i].PID = pid
+		consumers[i].Uptime = uptime
+	}
+
+	return consumers, nil
 }
 
 func (j *JolokiaClient) GetQueueDetail(name string) (*domain.QueueDetail, error) {
@@ -516,6 +792,12 @@ func (j *JolokiaClient) GetQueueDetail(name string) (*domain.QueueDetail, error)
 			if v, ok := props["Retroactive"].(bool); ok {
 				c.Retroactive = v
 			}
+			if v, ok := props["DispatchedQueueSize"].(float64); ok {
+				c.DispatchedQueueSize = int64(v)
+			}
+			if v, ok := props["PendingQueueSize"].(float64); ok {
+				c.PendingQueueSize = int64(v)
+			}
 
 			qd.Consumers = append(qd.Consumers, c)
 		}
@@ -532,6 +814,7 @@ func (j *JolokiaClient) GetQueueDetail(name string) (*domain.QueueDetail, error)
 				req.SetBasicAuth(j.username, j.password)
 			}
 			// #nosec G704 -- The URL is intentionally provided by the user via CLI config to connect to their own broker.
+			// #nosec G704 -- internal http client
 			resp, err := j.client.Do(req)
 			if err == nil {
 				defer func() { _ = resp.Body.Close() }()

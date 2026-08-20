@@ -36,12 +36,24 @@ func (u *ActiveMQUseCase) GetBrokerStats() (domain.BrokerStats, error) {
 	return u.queueRepo.GetBrokerStats()
 }
 
+func (u *ActiveMQUseCase) GetJVMStats() (domain.JVMStats, error) {
+	return u.queueRepo.GetJVMStats()
+}
+
 func (u *ActiveMQUseCase) GetQueues() ([]domain.Queue, error) {
 	return u.queueRepo.GetQueues()
 }
 
+func (u *ActiveMQUseCase) GetTopics() ([]domain.Topic, error) {
+	return u.queueRepo.GetTopics()
+}
+
 func (u *ActiveMQUseCase) GetConnections() ([]domain.Connection, error) {
 	return u.queueRepo.GetConnections()
+}
+
+func (u *ActiveMQUseCase) GetAllConsumers() ([]domain.Consumer, error) {
+	return u.queueRepo.GetAllConsumers()
 }
 
 func (u *ActiveMQUseCase) GetQueueDetail(name string) (*domain.QueueDetail, error) {

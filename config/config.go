@@ -20,6 +20,7 @@ type Config struct {
 type ActiveMQConfig struct {
 	Protocol   string `yaml:"protocol"`    // "stomp" or "amqp"
 	Host       string `yaml:"host"`        // e.g. "1.234.25.133"
+	ReadOnly   bool   `yaml:"readonly"`    // environment specific readonly override
 	StompPort  string `yaml:"stomp_port"`  // default "61613"
 	AmqpPort   string `yaml:"amqp_port"`   // default "5672"
 	WebPort    string `yaml:"web_port"`    // default "8161"
@@ -161,6 +162,7 @@ environments:
     web_port: 8161
     username: admin
     password: admin
+    readonly: false
   prod:
     protocol: amqp
     host: 192.168.0.100
@@ -169,6 +171,7 @@ environments:
     web_port: 8161
     username: myuser
     password: mypassword
+    readonly: true
 `
 	_ = os.WriteFile(path, []byte(defaultTemplate), 0600)
 }

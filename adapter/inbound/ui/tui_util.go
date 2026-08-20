@@ -218,3 +218,35 @@ func makeUsageBar(percent float64, bytes int64, isASCII bool) string {
 	}
 	return fmt.Sprintf("[%s] %3.0f%% (%s)", bar, percent, sizeStr)
 }
+
+func drawProgressBar(percent float64, width int) string {
+	if percent < 0 {
+		percent = 0
+	}
+	if percent > 100 {
+		percent = 100
+	}
+
+	filled := int((percent / 100.0) * float64(width))
+	empty := width - filled
+
+	bar := strings.Repeat("█", filled) + strings.Repeat("░", empty)
+	return fmt.Sprintf("[%s]", bar)
+}
+
+func truncateStr(s string, max int) string {
+	if len(s) > max {
+		return s[:max-2] + ".."
+	}
+	return s
+}
+
+func stripProtocol(s string) string {
+	if strings.HasPrefix(s, "tcp://") {
+		return s[6:]
+	}
+	if strings.HasPrefix(s, "ssl://") {
+		return s[6:]
+	}
+	return s
+}
