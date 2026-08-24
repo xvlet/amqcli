@@ -66,7 +66,7 @@ const (
 )
 
 type AppModel struct {
-	uc              *usecase.ActiveMQUseCase
+	uc              usecase.UseCase
 	env             string
 	refreshInterval time.Duration
 	viewStats       bool
@@ -120,7 +120,7 @@ func (m *AppModel) initViewport() {
 
 type tickMsg time.Time
 
-func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host string, env string, readOnly bool) *AppModel {
+func NewAppModel(uc usecase.UseCase, interval time.Duration, host string, env string, readOnly bool) *AppModel {
 	// Original profile detection for conditional styling
 	detectedProfile := lipgloss.ColorProfile()
 
@@ -132,9 +132,9 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host strin
 	// Initialize dynamic global styles based on profile
 	isHighColor := (detectedProfile == termenv.ANSI256 || detectedProfile == termenv.TrueColor)
 	if isHighColor {
-		titleStyle = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(lipgloss.Color("#c6a0f6"))
+		titleStyle = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(AppTheme.Primary)
 	} else {
-		titleStyle = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(lipgloss.Color("#c6a0f6"))
+		titleStyle = lipgloss.NewStyle().MarginLeft(2).Bold(true).Foreground(AppTheme.Primary)
 	}
 
 	// 1. Queue Table
@@ -180,17 +180,17 @@ func NewAppModel(uc *usecase.ActiveMQUseCase, interval time.Duration, host strin
 	conTable := table.New(table.WithColumns(conCols), table.WithFocused(true))
 
 	s := table.DefaultStyles()
-	s.Header = s.Header.BorderStyle(appBorder).BorderForeground(lipgloss.Color("#5b6078")).BorderBottom(true).Bold(false)
+	s.Header = s.Header.BorderStyle(appBorder).BorderForeground(AppTheme.Border).BorderBottom(true).Bold(false)
 
 	// Determine theme based on detected profile
 	isHighColor = (detectedProfile == termenv.ANSI256 || detectedProfile == termenv.TrueColor)
 
 	if isHighColor {
 		// Original 256-color theme
-		s.Selected = s.Selected.Foreground(lipgloss.Color("#181926")).Background(lipgloss.Color("#8aadf4")).Bold(false)
+		s.Selected = s.Selected.Foreground(AppTheme.Background).Background(AppTheme.Secondary).Bold(false)
 	} else {
 		// Limited terminal: Use high-contrast Black on White theme (as requested)
-		s.Selected = s.Selected.Foreground(lipgloss.Color("0")).Background(lipgloss.Color("15")).Bold(false)
+		s.Selected = s.Selected.Foreground(AppTheme.Background).Background(lipgloss.Color("15")).Bold(false)
 	}
 
 	qTable.SetStyles(s)
