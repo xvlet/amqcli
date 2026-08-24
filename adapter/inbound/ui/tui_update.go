@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"github.com/atotto/clipboard"
 	"github.com/xvlet/amqcli/domain"
 	"os"
 	"sort"
@@ -550,6 +551,16 @@ func (m *AppModel) updateMessageDetail(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			m.currentState = stateMessageList
 			m.selectedMessage = nil
+			return m, nil
+		case "c", "C", "y", "Y": // Copy Payload
+			if m.selectedMessage != nil && m.selectedMessage.Body != "" {
+				err := clipboard.WriteAll(m.selectedMessage.Body)
+				if err != nil {
+					m.err = err
+				} else {
+					m.err = fmt.Errorf("success: Payload copied to clipboard")
+				}
+			}
 			return m, nil
 		case "d", "D", "alt+d": // Delete
 			if m.readOnly {

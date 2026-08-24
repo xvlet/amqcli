@@ -13,14 +13,14 @@ var (
 	// Use standard bright ANSI colors to prevent dark gray rendering bugs
 	// that occur with some pastel hex colors (like #cad3f5) in certain terminal environments.
 	focusedStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("15")) // Bright White
-	blurredStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("7"))  // Normal White
-	cursorStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("14")) // Bright Cyan
-	noStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))  // Bright Black (Dark Gray)
+	blurredStyle = lipgloss.NewStyle().Foreground(AppTheme.Text)        // Normal White
+	cursorStyle  = lipgloss.NewStyle().Foreground(AppTheme.Highlight)   // Bright Cyan
+	noStyle      = lipgloss.NewStyle().Foreground(AppTheme.MutedText)   // Bright Black (Dark Gray)
 
-	btnStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("7")).Padding(0, 1)
-	focusedBtnStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("0")).Background(lipgloss.Color("14")).Bold(true).Padding(0, 1)
+	btnStyle        = lipgloss.NewStyle().Foreground(AppTheme.Text).Padding(0, 1)
+	focusedBtnStyle = lipgloss.NewStyle().Foreground(AppTheme.Background).Background(AppTheme.Highlight).Bold(true).Padding(0, 1)
 
-	popupBorder = lipgloss.Color("14") // Bright Cyan
+	popupBorder = AppTheme.Highlight // Bright Cyan
 
 	SubmitOptOk     = "OK"
 	SubmitOptCancel = "Cancel"
@@ -157,7 +157,7 @@ func (m FormModel) View() string {
 	buttons := lipgloss.JoinHorizontal(lipgloss.Top, okStyle.Render("[  OK  ]"), "   ", cancelStyle.Render("[ Cancel ]"))
 	fmt.Fprintf(&b, "%s\n", buttons)
 
-	return lipgloss.NewStyle().Border(appBorder).BorderForeground(lipgloss.Color("#8aadf4")).Padding(1, 2).Render(b.String())
+	return lipgloss.NewStyle().Border(appBorder).BorderForeground(AppTheme.Secondary).Padding(1, 2).Render(b.String())
 }
 
 func (m FormModel) GetValues() []string {
