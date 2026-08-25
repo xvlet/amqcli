@@ -76,10 +76,10 @@ flowchart LR
 
 | Broker Type | 버전 | TUI 대시보드 (Jolokia) | 메시지 송수신 (AMQP/STOMP) | 비고 |
 | :--- | :--- | :---: | :---: | :--- |
-| **ActiveMQ Classic** | 5.x ~ 6.x | 🟢 완벽 지원 | 🟢 완벽 지원 | `amqcli`의 주 타겟 브로커입니다. |
-| **ActiveMQ Artemis** | 2.x ~ | ❌ 미지원 | 🟢 지원 | Artemis는 JMX MBean 구조가 완전히 달라 대시보드는 렌더링되지 않으나, 프로토콜 기반 송수신은 가능합니다. |
+| **ActiveMQ Classic** | 5.x ~ 6.x | 🟢 완벽 지원 | 🟢 완벽 지원 | Native JMX/Jolokia MBean 기반 관리 지원 |
+| **ActiveMQ Artemis** | 2.x ~ 3.x | 🟢 완벽 지원 | 🟢 완벽 지원 | Address & Queue 구조 완벽 매핑 및 자동 감지(Auto-Discovery) 지원 |
 
-> *참고: `amqcli`의 TUI 대시보드가 보여주는 Jolokia(JMX) 메트릭은 브로커 메모리 상의 실시간 뷰(Runtime View)입니다. KahaDB 등 디스크에 저장된 영속성(Persistence) 데이터 전체와 미세한 시차가 발생할 수 있습니다.*
+> *참고: `amqcli`는 브로커에 연결할 때 대상이 Classic인지 Artemis인지 자동으로 탐색하여 최적의 어댑터를 연결합니다.*
 
 
 ---
@@ -146,7 +146,8 @@ refresh_interval: 1s
 encoding: utf-8
 environments:
   dev:
-    protocol: "stomp"  # 또는 "amqp"
+    broker_type: "auto" # "auto", "classic", 또는 "artemis" (기본값: auto)
+    protocol: "stomp"   # 또는 "amqp"
     host: "${MQ_HOST:-127.0.0.1}"
     stomp_port: "61613" # 선택 사항 (기본값: 61613)
     web_port: "8161"    # 선택 사항 (기본값: 8161)
@@ -154,6 +155,7 @@ environments:
     password: "${MQ_PASS:-admin}"
     readonly: false
   prod:
+    broker_type: "auto"
     protocol: "amqp"
     host: "10.0.0.5"
     amqp_port: "5672"   # 선택 사항 (기본값: 5672)

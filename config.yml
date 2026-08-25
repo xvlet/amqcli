@@ -6,7 +6,8 @@ encoding: utf-8
 
 environments:
   dev:
-    protocol: "stomp"  # or "amqp"
+    broker_type: "auto" # "auto", "classic", or "artemis" (default: auto)
+    protocol: "stomp"   # "stomp" or "amqp"
     host: "${MQ_HOST:-127.0.0.1}"
     stomp_port: "61613" # optional (default: 61613)
     web_port: "8161"    # optional (default: 8161)
@@ -14,6 +15,7 @@ environments:
     password: "${MQ_PASS:-admin}"
     readonly: false
   prod:
+    broker_type: "auto"
     protocol: "amqp"
     host: "10.0.0.5"
     amqp_port: "5672"   # optional (default: 5672)

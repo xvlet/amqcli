@@ -76,10 +76,10 @@ flowchart LR
 
 | Broker Type | Versions | TUI Dashboard (Jolokia) | Messaging (AMQP/STOMP) | Notes |
 | :--- | :--- | :---: | :---: | :--- |
-| **ActiveMQ Classic** | 5.x ~ 6.x | 🟢 Fully Supported | 🟢 Fully Supported | The primary target broker for `amqcli`. |
-| **ActiveMQ Artemis** | 2.x ~ | ❌ Not Supported | 🟢 Supported | Artemis uses a completely different JMX MBean structure. While the TUI dashboard cannot render metrics, protocol-based message sending still functions. |
+| **ActiveMQ Classic** | 5.x ~ 6.x | 🟢 Fully Supported | 🟢 Fully Supported | Native JMX/Jolokia MBean management. |
+| **ActiveMQ Artemis** | 2.x ~ 3.x | 🟢 Fully Supported | 🟢 Fully Supported | Seamless Address/Queue management with auto-discovery. |
 
-> *Note: The Jolokia (JMX) metrics displayed in the TUI represent the broker's real-time runtime memory view, which may have slight discrepancies with the fully persisted KahaDB disk state.*
+> *Note: `amqcli` automatically detects whether the target broker is Classic or Artemis. The Jolokia (JMX) metrics displayed in the TUI represent the broker's real-time runtime memory view.*
 
 
 ---
@@ -146,7 +146,8 @@ refresh_interval: 1s
 encoding: utf-8
 environments:
   dev:
-    protocol: "stomp"  # or "amqp"
+    broker_type: "auto" # "auto", "classic", or "artemis" (default: auto)
+    protocol: "stomp"   # "stomp" or "amqp"
     host: "${MQ_HOST:-127.0.0.1}"
     stomp_port: "61613" # optional (default: 61613)
     web_port: "8161"    # optional (default: 8161)
@@ -154,6 +155,7 @@ environments:
     password: "${MQ_PASS:-admin}"
     readonly: false
   prod:
+    broker_type: "auto"
     protocol: "amqp"
     host: "10.0.0.5"
     amqp_port: "5672"   # optional (default: 5672)

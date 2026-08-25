@@ -30,8 +30,19 @@ type JolokiaClient struct {
 }
 
 func NewJolokiaClient(cfg config.ActiveMQConfig) *JolokiaClient {
-	// Ensure Jolokia URL has parameters to prevent truncation
 	url := cfg.JolokiaURL
+	if url == "" {
+		host := cfg.Host
+		if host == "" {
+			host = "127.0.0.1"
+		}
+		webPort := cfg.WebPort
+		if webPort == "" {
+			webPort = "8161"
+		}
+		url = fmt.Sprintf("http://%s:%s/api/jolokia", host, webPort)
+	}
+
 	if !strings.Contains(url, "?") {
 		url += "?maxDepth=10&maxCollectionSize=10000&maxObjects=10000"
 	}
@@ -69,13 +80,24 @@ func (j *JolokiaClient) doRequest(reqData JolokiaRequest) ([]byte, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	// Add Origin header to bypass Jolokia CORS strict checking
-	req.Header.Set("Origin", "http://localhost")
-	// Or parse from url, but ActiveMQ usually just needs it to not be absent/null for strict setups unless specifically configured.
-	// Actually, just passing the Jolokia URL's domain/scheme works.
-	if parts := strings.Split(j.url, "/api/jolokia"); len(parts) > 0 {
-		req.Header.Set("Origin", parts[0])
+	// Set Origin header to satisfy Jolokia CORS policies (allow localhost / 127.0.0.1)
+	origin := "http://localhost:8161"
+	if parts := strings.Split(j.url, "/"); len(parts) >= 3 {
+		hostPort := parts[2]
+		scheme := parts[0]
+		if strings.HasPrefix(scheme, "http") {
+			if strings.HasPrefix(hostPort, "127.0.0.1") {
+				port := ""
+				if hp := strings.Split(hostPort, ":"); len(hp) > 1 {
+					port = ":" + hp[1]
+				}
+				origin = fmt.Sprintf("%s//localhost%s", scheme, port)
+			} else {
+				origin = fmt.Sprintf("%s//%s", scheme, hostPort)
+			}
+		}
 	}
+	req.Header.Set("Origin", origin)
 
 	if j.username != "" && j.password != "" {
 		req.SetBasicAuth(j.username, j.password)
