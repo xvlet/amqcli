@@ -139,11 +139,11 @@ func NewAppModel(uc usecase.UseCase, interval time.Duration, host string, env st
 
 	// 1. Queue Table
 	qCols := []table.Column{
-		{Title: "Name", Width: 26},
-		{Title: fmt.Sprintf("%10s", "Pending"), Width: 10},
-		{Title: fmt.Sprintf("%10s", "Consumers"), Width: 10},
-		{Title: fmt.Sprintf("%10s", "Enqueued"), Width: 10},
-		{Title: fmt.Sprintf("%10s", "Dequeued"), Width: 10},
+		{Title: "Name", Width: 46},
+		{Title: fmt.Sprintf("%12s", "Pending"), Width: 12},
+		{Title: fmt.Sprintf("%12s", "Consumers"), Width: 12},
+		{Title: fmt.Sprintf("%12s", "Enqueued"), Width: 12},
+		{Title: fmt.Sprintf("%12s", "Dequeued"), Width: 12},
 	}
 	qTable := table.New(table.WithColumns(qCols), table.WithFocused(true))
 

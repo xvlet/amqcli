@@ -18,17 +18,19 @@ type Config struct {
 }
 
 type ActiveMQConfig struct {
-	Protocol   string `yaml:"protocol"`    // "stomp" or "amqp"
-	Host       string `yaml:"host"`        // e.g. "1.234.25.133"
-	ReadOnly   bool   `yaml:"readonly"`    // environment specific readonly override
-	StompPort  string `yaml:"stomp_port"`  // default "61613"
-	AmqpPort   string `yaml:"amqp_port"`   // default "5672"
-	WebPort    string `yaml:"web_port"`    // default "8161"
-	StompURL   string `yaml:"stomp_url"`   // optional full override
-	AmqpURL    string `yaml:"amqp_url"`    // optional full override
-	JolokiaURL string `yaml:"jolokia_url"` // optional full override
-	Username   string `yaml:"username"`
-	Password   string `yaml:"password"` // #nosec G117 -- plain config field, not a leaked secret
+	BrokerType  string `yaml:"broker_type"`  // "auto", "classic", or "artemis" (default "auto")
+	Protocol    string `yaml:"protocol"`     // "stomp" or "amqp"
+	Host        string `yaml:"host"`         // e.g. "1.234.25.133"
+	ReadOnly    bool   `yaml:"readonly"`     // environment specific readonly override
+	StompPort   string `yaml:"stomp_port"`   // default "61613"
+	AmqpPort    string `yaml:"amqp_port"`    // default "5672"
+	WebPort     string `yaml:"web_port"`     // default "8161"
+	StompURL    string `yaml:"stomp_url"`    // optional full override
+	AmqpURL     string `yaml:"amqp_url"`     // optional full override
+	JolokiaURL  string `yaml:"jolokia_url"`  // optional full override
+	JolokiaPath string `yaml:"jolokia_path"` // optional path override (e.g. "/console/jolokia")
+	Username    string `yaml:"username"`
+	Password    string `yaml:"password"` // #nosec G117 -- plain config field, not a leaked secret
 }
 
 func LoadConfig(path string) (*Config, error) {
@@ -102,6 +104,9 @@ func parseConfig(data []byte) (*Config, error) {
 
 	for key, mq := range cfg.Environments {
 		if mq.Host != "" {
+			if mq.BrokerType == "" {
+				mq.BrokerType = "auto"
+			}
 			if mq.Protocol == "" {
 				mq.Protocol = "stomp"
 			}
@@ -124,7 +129,13 @@ func parseConfig(data []byte) (*Config, error) {
 				mq.AmqpURL = fmt.Sprintf("amqp://%s:%s", mq.Host, amqpPort)
 			}
 			if mq.JolokiaURL == "" {
-				mq.JolokiaURL = fmt.Sprintf("http://%s:%s/api/jolokia", mq.Host, webPort)
+				if mq.JolokiaPath != "" {
+					mq.JolokiaURL = fmt.Sprintf("http://%s:%s%s", mq.Host, webPort, mq.JolokiaPath)
+				} else if strings.EqualFold(mq.BrokerType, "artemis") {
+					mq.JolokiaURL = fmt.Sprintf("http://%s:%s/console/jolokia", mq.Host, webPort)
+				} else if strings.EqualFold(mq.BrokerType, "classic") {
+					mq.JolokiaURL = fmt.Sprintf("http://%s:%s/api/jolokia", mq.Host, webPort)
+				}
 			}
 			cfg.Environments[key] = mq
 		}
@@ -155,6 +166,7 @@ encoding: "utf-8"
 
 environments:
   dev:
+    broker_type: auto
     protocol: stomp
     host: 127.0.0.1
     stomp_port: 61613
@@ -164,6 +176,7 @@ environments:
     password: admin
     readonly: false
   prod:
+    broker_type: auto
     protocol: amqp
     host: 192.168.0.100
     stomp_port: 61613

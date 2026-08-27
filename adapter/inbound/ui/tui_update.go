@@ -779,26 +779,8 @@ func (m *AppModel) updateConnections(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *AppModel) updateQueueTableColumns() {
-	// Name width is preserved from existing configuration to avoid shrinking unexpectedly
-	qNameW := 26
-	if len(m.queueTable.Columns()) > 0 {
-		qNameW = m.queueTable.Columns()[0].Width
-	}
-	qCols := []table.Column{
-		{Title: "Name", Width: qNameW},
-		{Title: fmt.Sprintf("%12s", "Pending"), Width: 12},
-		{Title: fmt.Sprintf("%12s", "Consumers"), Width: 12},
-		{Title: fmt.Sprintf("%12s", "Enqueued"), Width: 12},
-		{Title: fmt.Sprintf("%12s", "Dequeued"), Width: 12},
-	}
-	if m.viewStats {
-		qCols = append(qCols,
-			table.Column{Title: "Memory", Width: 30},
-			table.Column{Title: "Disk", Width: 15},
-		)
-	}
 	m.queueTable.SetRows([]table.Row{}) // Temporarily clear rows to prevent panic during SetColumns
-	m.queueTable.SetColumns(qCols)
+	m.recalculateTableWidths()
 }
 
 func (m *AppModel) buildQueueRows(queues []domain.Queue) []table.Row {

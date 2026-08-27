@@ -14,44 +14,69 @@ func (m *AppModel) recalculateTableWidths() {
 		return
 	}
 
-	// Calculate inner width for safety checks (Margin(2)+Border(2)+Padding(2)=6 offset)
-	contentWidth := m.width - 10
+	// Box inner usable width: Width(m.width-6) with Border(2) and Padding(2) gives m.width - 10
+	innerUsableWidth := m.width - 10
+	if innerUsableWidth < 40 {
+		innerUsableWidth = 40
+	}
 
 	// 1. Queue Table Resizing
-	// Use original fixed widths, only shrink Name if terminal is too narrow
-	qNameW := 26
-	if contentWidth < 105 {
-		qNameW = contentWidth - 70
+	// Max cap at 46 so UUID queue names (36 chars) fit completely without creating huge empty gaps in fullscreen
+	if !m.viewStats {
+		// 5 columns: Name + 4 fixed metrics (12 chars each = 48) + 5*2 cell padding (10) = 58 fixed overhead
+		qNameW := innerUsableWidth - 58 - 2
+		if qNameW > 46 {
+			qNameW = 46
+		}
 		if qNameW < 10 {
 			qNameW = 10
 		}
-	}
-	qCols := []table.Column{
-		{Title: "Name", Width: qNameW},
-		{Title: fmt.Sprintf("%12s", "Pending"), Width: 12},
-		{Title: fmt.Sprintf("%12s", "Consumers"), Width: 12},
-		{Title: fmt.Sprintf("%12s", "Enqueued"), Width: 12},
-		{Title: fmt.Sprintf("%12s", "Dequeued"), Width: 12},
-	}
-	if m.viewStats {
-		qCols = append(qCols,
-			table.Column{Title: "Memory", Width: 30},
-			table.Column{Title: "Disk", Width: 15},
-		)
-	}
-	m.queueTable.SetColumns(qCols)
-
-	// 2. Message Table Resizing
-	// Use original fixed widths where possible, shrink ID/Correlation proportionally if needed
-	mIdW := 46
-	mCorrW := 36
-	if contentWidth < 164 {
-		slack := contentWidth - 82
-		if slack < 20 {
-			slack = 20
+		m.queueTable.SetColumns([]table.Column{
+			{Title: "Name", Width: qNameW},
+			{Title: fmt.Sprintf("%12s", "Pending"), Width: 12},
+			{Title: fmt.Sprintf("%12s", "Consumers"), Width: 12},
+			{Title: fmt.Sprintf("%12s", "Enqueued"), Width: 12},
+			{Title: fmt.Sprintf("%12s", "Dequeued"), Width: 12},
+		})
+	} else {
+		// 7 columns: Name + 4 metrics (48) + Memory (26) + Disk (12) = 86 + 7*2 padding (14) = 100 fixed overhead
+		qNameW := innerUsableWidth - 100 - 2
+		if qNameW > 46 {
+			qNameW = 46
 		}
-		mIdW = int(float64(slack) * 0.56)
-		mCorrW = slack - mIdW
+		if qNameW < 10 {
+			qNameW = 10
+		}
+		m.queueTable.SetColumns([]table.Column{
+			{Title: "Name", Width: qNameW},
+			{Title: fmt.Sprintf("%12s", "Pending"), Width: 12},
+			{Title: fmt.Sprintf("%12s", "Consumers"), Width: 12},
+			{Title: fmt.Sprintf("%12s", "Enqueued"), Width: 12},
+			{Title: fmt.Sprintf("%12s", "Dequeued"), Width: 12},
+			{Title: "Memory", Width: 26},
+			{Title: "Disk", Width: 12},
+		})
+	}
+
+	// 2. Message Table Resizing (8 columns)
+	// 8*2 padding (16) + SEQ(5) + Persistence(12) + Priority(8) + Redelivered(12) + Timestamp(24) + Action(10) = 87 fixed overhead
+	msgSlack := innerUsableWidth - 87 - 2
+	if msgSlack < 20 {
+		msgSlack = 20
+	}
+	mIdW := int(float64(msgSlack) * 0.55)
+	mCorrW := msgSlack - mIdW
+	if mIdW > 46 {
+		mIdW = 46
+	}
+	if mCorrW > 36 {
+		mCorrW = 36
+	}
+	if mIdW < 10 {
+		mIdW = 10
+	}
+	if mCorrW < 10 {
+		mCorrW = 10
 	}
 
 	m.msgTable.SetColumns([]table.Column{
@@ -61,23 +86,31 @@ func (m *AppModel) recalculateTableWidths() {
 		{Title: "Persistence", Width: 12},
 		{Title: "Priority", Width: 8},
 		{Title: "Redelivered", Width: 12},
-		{Title: "Timestamp", Width: 30},
-		{Title: "Action", Width: 15},
+		{Title: "Timestamp", Width: 24},
+		{Title: "Action", Width: 10},
 	})
 
-	// 3. Connections Table Resizing
-	cNameW := 40
-	cAddrW := 30
-	if contentWidth < 90 {
-		cAddrW = contentWidth - 60
-		if cAddrW < 10 {
-			cAddrW = 10
-		}
-		cNameW = contentWidth - cAddrW - 20
-		if cNameW < 10 {
-			cNameW = 10
-		}
+	// 3. Connections Table Resizing (4 columns)
+	// 4*2 padding (8) + Active(10) + Slow(10) = 28 fixed overhead
+	connSlack := innerUsableWidth - 28 - 2
+	if connSlack < 20 {
+		connSlack = 20
 	}
+	cNameW := int(float64(connSlack) * 0.55)
+	cAddrW := connSlack - cNameW
+	if cNameW > 46 {
+		cNameW = 46
+	}
+	if cAddrW > 32 {
+		cAddrW = 32
+	}
+	if cNameW < 10 {
+		cNameW = 10
+	}
+	if cAddrW < 10 {
+		cAddrW = 10
+	}
+
 	m.connectionsTable.SetColumns([]table.Column{
 		{Title: "Name", Width: cNameW},
 		{Title: "Remote Address", Width: cAddrW},
@@ -85,31 +118,22 @@ func (m *AppModel) recalculateTableWidths() {
 		{Title: "Slow", Width: 10},
 	})
 
-	// 4. Consumers Table Resizing
-	conPidW := 10
-	conAddrW := 25
-	conClientW := 40
-	conDeqW := 10
-	conUptimeW := 15
-
-	if contentWidth < 100 {
-		// narrower terminal, shrink ClientID proportionally
-		conClientW = contentWidth - 60
-		if conClientW < 10 {
-			conClientW = 10
-		}
-		conAddrW = contentWidth - conClientW - 35
-		if conAddrW < 10 {
-			conAddrW = 10
-		}
+	// 4. Consumers Table Resizing (5 columns)
+	// 5*2 padding (10) + PID(10) + Remote Address(22) + Dequeues(10) + Uptime(12) = 64 fixed overhead
+	conClientW := innerUsableWidth - 64 - 2
+	if conClientW > 46 {
+		conClientW = 46
+	}
+	if conClientW < 10 {
+		conClientW = 10
 	}
 
 	m.consumersTable.SetColumns([]table.Column{
-		{Title: "PID", Width: conPidW},
-		{Title: "Remote Address", Width: conAddrW},
+		{Title: "PID", Width: 10},
+		{Title: "Remote Address", Width: 22},
 		{Title: "Client ID", Width: conClientW},
-		{Title: "Dequeues", Width: conDeqW},
-		{Title: "Uptime", Width: conUptimeW},
+		{Title: "Dequeues", Width: 10},
+		{Title: "Uptime", Width: 12},
 	})
 }
 

@@ -42,7 +42,7 @@ func main() {
 	}
 
 	// 2. Initialize outbound adapters
-	jolokiaClient := activemq.NewJolokiaClient(mqConfig)
+	queueRepo := activemq.NewQueueRepository(mqConfig)
 
 	var msgRepo domain.MessageRepository
 	if mqConfig.Protocol == "amqp" {
@@ -52,7 +52,7 @@ func main() {
 	}
 
 	// 3. Initialize UseCases
-	uc := usecase.NewActiveMQUseCase(jolokiaClient, msgRepo, cfg.Encoding)
+	uc := usecase.NewActiveMQUseCase(queueRepo, msgRepo, cfg.Encoding)
 
 	// 4. Determine ReadOnly state (Flag overrides config)
 	isReadOnly := mqConfig.ReadOnly
