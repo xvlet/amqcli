@@ -11,6 +11,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go Version">
+  <a href="https://amqcli.pages.dev/"><img src="https://img.shields.io/badge/Website-amqcli.pages.dev-4A90D9?style=for-the-badge&logo=cloudflarepages&logoColor=white" alt="Website"></a>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT">
   <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=for-the-badge" alt="Platform">
   <img src="https://img.shields.io/badge/Arch-amd64%20%7C%20arm64-blueviolet?style=for-the-badge" alt="Architecture">
@@ -77,7 +78,7 @@ flowchart LR
 | Broker Type | 버전 | TUI 대시보드 (Jolokia) | 메시지 송수신 (AMQP/STOMP) | 비고 |
 | :--- | :--- | :---: | :---: | :--- |
 | **ActiveMQ Classic** | 5.x ~ 6.x | 🟢 완벽 지원 | 🟢 완벽 지원 | Native JMX/Jolokia MBean 기반 관리 지원 |
-| **ActiveMQ Artemis** | 2.x ~ 3.x | 🟢 완벽 지원 | 🟢 완벽 지원 | Address & Queue 구조 완벽 매핑 및 자동 감지(Auto-Discovery) 지원 |
+| **ActiveMQ Artemis** | 2.x ~ 3.x | 🚧 작업 중 (WIP) | 🚧 작업 중 (WIP) | 현재 개발 작업이 진행 중입니다. |
 
 > *참고: `amqcli`는 브로커에 연결할 때 대상이 Classic인지 Artemis인지 자동으로 탐색하여 최적의 어댑터를 연결합니다.*
 
@@ -100,12 +101,12 @@ brew install amqcli
 
 **macOS / Linux (Shell)**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/xvlet/amqcli/master/install.sh | sh
+curl -fsSL https://amqcli.pages.dev/install.sh | sh
 ```
 
 **Windows (PowerShell)**
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/xvlet/amqcli/master/install.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://amqcli.pages.dev/install.ps1 | iex"
 ```
 
 ### 3. Go 명령어 사용 (go install)

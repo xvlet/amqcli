@@ -11,6 +11,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Go-1.25+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go Version">
+  <a href="https://amqcli.pages.dev/"><img src="https://img.shields.io/badge/Website-amqcli.pages.dev-4A90D9?style=for-the-badge&logo=cloudflarepages&logoColor=white" alt="Website"></a>
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License: MIT">
   <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=for-the-badge" alt="Platform">
   <img src="https://img.shields.io/badge/Arch-amd64%20%7C%20arm64-blueviolet?style=for-the-badge" alt="Architecture">
@@ -77,7 +78,7 @@ flowchart LR
 | Broker Type | Versions | TUI Dashboard (Jolokia) | Messaging (AMQP/STOMP) | Notes |
 | :--- | :--- | :---: | :---: | :--- |
 | **ActiveMQ Classic** | 5.x ~ 6.x | 🟢 Fully Supported | 🟢 Fully Supported | Native JMX/Jolokia MBean management. |
-| **ActiveMQ Artemis** | 2.x ~ 3.x | 🟢 Fully Supported | 🟢 Fully Supported | Seamless Address/Queue management with auto-discovery. |
+| **ActiveMQ Artemis** | 2.x ~ 3.x | 🚧 Work In Progress | 🚧 Work In Progress | Development in progress. |
 
 > *Note: `amqcli` automatically detects whether the target broker is Classic or Artemis. The Jolokia (JMX) metrics displayed in the TUI represent the broker's real-time runtime memory view.*
 
@@ -100,12 +101,12 @@ The easiest way to install the latest release is by using the provided installat
 
 **macOS / Linux (Shell)**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/xvlet/amqcli/master/install.sh | sh
+curl -fsSL https://amqcli.pages.dev/install.sh | sh
 ```
 
 **Windows (PowerShell)**
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/xvlet/amqcli/master/install.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://amqcli.pages.dev/install.ps1 | iex"
 ```
 
 ### 3. Using Go (go install)
